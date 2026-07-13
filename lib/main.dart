@@ -1200,6 +1200,165 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 }
 
 // ============================================================
+// COIN PAINTER
+// ============================================================
+class _CoinPainter extends CustomPainter {
+  final bool isHeads;
+
+  _CoinPainter({required this.isHeads});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // Outer edge shadow
+    final edgeShadow = Paint()
+      ..shader = RadialGradient(
+        colors: [Colors.black.withValues(alpha: 0), Colors.black.withValues(alpha: 0.15)],
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+    canvas.drawCircle(center, radius, edgeShadow);
+
+    // Main body
+    final bodyPaint = Paint()
+      ..shader = RadialGradient(
+        focal: const Alignment(-0.2, -0.3),
+        colors: isHeads
+            ? [const Color(0xFFFFF3E0), const Color(0xFFFFB74D), const Color(0xFFF57C00)]
+            : [const Color(0xFFE8EAF6), const Color(0xFF9FA8DA), const Color(0xFF5C6BC0)],
+      ).createShader(Rect.fromCircle(center: center, radius: radius - 2));
+    canvas.drawCircle(center, radius - 2, bodyPaint);
+
+    // Inner border ring
+    final ringPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+    final ringRect = Rect.fromCircle(center: center, radius: radius - 8);
+    ringPaint.shader = LinearGradient(
+      colors: [Colors.white.withValues(alpha: 0.6), Colors.white.withValues(alpha: 0.1)],
+    ).createShader(ringRect);
+    canvas.drawCircle(center, radius - 8, ringPaint);
+
+    // Small dots around the ring (coin edge texture)
+    final dotPaint = Paint()..color = Colors.white.withValues(alpha: 0.3);
+    for (int i = 0; i < 24; i++) {
+      final a = i * 2 * pi / 24;
+      final dx = center.dx + (radius - 14) * cos(a);
+      final dy = center.dy + (radius - 14) * sin(a);
+      canvas.drawCircle(Offset(dx, dy), 1.5, dotPaint);
+    }
+
+    // Center text
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: isHeads ? '\u2605' : '\u2663',
+        style: TextStyle(
+          fontSize: radius * 0.55,
+          color: isHeads ? const Color(0xFFE65100) : const Color(0xFF283593),
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    textPainter.paint(canvas, Offset(center.dx - textPainter.width / 2, center.dy - textPainter.height / 2 - radius * 0.1));
+
+    // Denomination text
+    final valPainter = TextPainter(
+      text: TextSpan(
+        text: isHeads ? '1' : '2',
+        style: TextStyle(
+          fontSize: radius * 0.25,
+          color: isHeads ? const Color(0xFFBF360C) : const Color(0xFF1A237E),
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    valPainter.paint(canvas, Offset(center.dx - valPainter.width / 2, center.dy + radius * 0.25));
+
+    // Glossy highlight
+    final glossPaint = Paint()
+      ..shader = RadialGradient(
+        focal: const Alignment(-0.4, -0.4),
+        colors: [Colors.white.withValues(alpha: 0.4), Colors.white.withValues(alpha: 0)],
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+    canvas.drawCircle(center, radius, glossPaint);
+  }
+
+  @override
+  bool shouldRepaint(_CoinPainter old) => old.isHeads != isHeads;
+}
+
+// ============================================================
+// DICE FACE PAINTER
+// ============================================================
+class _DicePainter extends CustomPainter {
+  final int value;
+
+  _DicePainter({required this.value});
+
+  static const _dotPositions = {
+    1: [Offset(0.5, 0.5)],
+    2: [Offset(0.75, 0.25), Offset(0.25, 0.75)],
+    3: [Offset(0.75, 0.25), Offset(0.5, 0.5), Offset(0.25, 0.75)],
+    4: [Offset(0.25, 0.25), Offset(0.75, 0.25), Offset(0.25, 0.75), Offset(0.75, 0.75)],
+    5: [Offset(0.25, 0.25), Offset(0.75, 0.25), Offset(0.5, 0.5), Offset(0.25, 0.75), Offset(0.75, 0.75)],
+    6: [Offset(0.25, 0.25), Offset(0.75, 0.25), Offset(0.25, 0.5), Offset(0.75, 0.5), Offset(0.25, 0.75), Offset(0.75, 0.75)],
+  };
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final margin = w * 0.08;
+
+    // Shadow
+    final shadow = Paint()
+      ..color = Colors.black.withValues(alpha: 0.12)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(2, 3, w, h), Radius.circular(w * 0.18)), shadow);
+
+    // White body
+    final body = Paint()
+      ..color = const Color(0xFFFAFAFA)
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [const Color(0xFFFFFFFF), const Color(0xFFE0E0E0)],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
+    final rrect = RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, w, h), Radius.circular(w * 0.18));
+    canvas.drawRRect(rrect, body);
+
+    // Inner border
+    final border = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..color = Colors.black.withValues(alpha: 0.1);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(Rect.fromLTWH(1.5, 1.5, w - 3, h - 3), Radius.circular(w * 0.16)),
+      border,
+    );
+
+    // Dots
+    final dotR = w * 0.08;
+    final dotPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [const Color(0xFF424242), const Color(0xFF212121)],
+      ).createShader(Rect.fromCircle(center: Offset.zero, radius: dotR));
+
+    final positions = _dotPositions[value] ?? [];
+    for (final pos in positions) {
+      final dx = margin + pos.dx * (w - 2 * margin);
+      final dy = margin + pos.dy * (h - 2 * margin);
+      canvas.drawCircle(Offset(dx, dy), dotR, dotPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DicePainter old) => old.value != value;
+}
+
+// ============================================================
 // COIN FLIP PAGE
 // ============================================================
 class _CoinFlipPage extends StatefulWidget {
@@ -1266,26 +1425,12 @@ class _CoinFlipPageState extends State<_CoinFlipPage> with TickerProviderStateMi
                     ..setEntry(3, 2, 0.002)
                     ..rotateY(angle),
                   alignment: Alignment.center,
-                  child: Container(
-                    width: 160,
-                    height: 160,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: showHeads
-                            ? [Colors.amber.shade300, Colors.amber.shade700]
-                            : [Colors.blue.shade300, Colors.blue.shade700],
-                        focal: const Alignment(0.3, 0.3),
-                      ),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 16, offset: const Offset(0, 6)),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        showHeads ? 'H' : 'T',
-                        style: const TextStyle(fontSize: 64, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
+                  child: SizedBox(
+                    width: 170,
+                    height: 170,
+                    child: CustomPaint(
+                      size: const Size(170, 170),
+                      painter: _CoinPainter(isHeads: showHeads),
                     ),
                   ),
                 );
@@ -1332,8 +1477,7 @@ class _DiceRollerPageState extends State<_DiceRollerPage> {
   bool _isRolling = false;
   final _random = Random();
 
-  static const _diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-  static const _sideOptions = [4, 6, 8, 10, 12, 20, 100];
+  static const _sideOptions = [4, 6, 8, 10, 12, 20];
 
   void _roll() {
     if (_isRolling) return;
@@ -1347,6 +1491,15 @@ class _DiceRollerPageState extends State<_DiceRollerPage> {
         setState(() => _isRolling = false);
       }
     });
+  }
+
+  String _diceLabel(int sides, int val) {
+    if (sides == 4) return 'D4: $val';
+    if (sides == 8) return 'D8: $val';
+    if (sides == 10) return 'D10: $val';
+    if (sides == 12) return 'D12: $val';
+    if (sides == 20) return 'D20: $val';
+    return 'D6: $val';
   }
 
   @override
@@ -1366,32 +1519,45 @@ class _DiceRollerPageState extends State<_DiceRollerPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedScale(
-              scale: _isRolling ? 1.1 : 1.0,
+              scale: _isRolling ? 1.08 : 1.0,
               duration: const Duration(milliseconds: 150),
-              child: Container(
-                width: 130,
-                height: 130,
-                decoration: BoxDecoration(
-                  color: theme.cardColor,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 12, offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    _sides == 6 && _result <= 6 ? _diceFaces[_result - 1] : '$_result',
-                    style: TextStyle(
-                      fontSize: _sides == 6 ? 72 : 56,
-                      color: primary,
-                      fontWeight: FontWeight.bold,
+              child: _sides == 6
+                  ? SizedBox(
+                      width: 130,
+                      height: 130,
+                      child: CustomPaint(
+                        size: const Size(130, 130),
+                        painter: _DicePainter(value: _result),
+                      ),
+                    )
+                  : Container(
+                      width: 130,
+                      height: 130,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [const Color(0xFFFFFFFF), const Color(0xFFE0E0E0)],
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 10, offset: const Offset(2, 4)),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$_result',
+                          style: TextStyle(
+                            fontSize: 52,
+                            color: const Color(0xFF424242),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ),
             ),
             const SizedBox(height: 24),
-            Text('D$_sides · Result: $_result',
+            Text(_diceLabel(_sides, _result),
               style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: primary)),
             const SizedBox(height: 28),
             SizedBox(
