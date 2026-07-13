@@ -8,33 +8,45 @@ void main() {
   runApp(const RandomFlutterApp());
 }
 
+class _ThemeState extends InheritedWidget {
+  final ThemeMode themeMode;
+  final Color seedColor;
+  final VoidCallback toggleTheme;
+  final ValueChanged<Color> setSeedColor;
+
+  const _ThemeState({
+    required this.themeMode,
+    required this.seedColor,
+    required this.toggleTheme,
+    required this.setSeedColor,
+    required super.child,
+  });
+
+  static _ThemeState? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<_ThemeState>();
+  }
+
+  @override
+  bool updateShouldNotify(_ThemeState old) =>
+    old.themeMode != themeMode || old.seedColor != seedColor;
+}
+
 class RandomFlutterApp extends StatefulWidget {
   const RandomFlutterApp({super.key});
 
   @override
-  State<RandomFlutterApp> createState() => RandomFlutterAppState();
-
-  static RandomFlutterAppState? of(BuildContext context) {
-    return context.findAncestorStateOfType<RandomFlutterAppState>();
-  }
+  State<RandomFlutterApp> createState() => _RandomFlutterAppState();
 }
 
-class RandomFlutterAppState extends State<RandomFlutterApp> {
+class _RandomFlutterAppState extends State<RandomFlutterApp> {
   ThemeMode _themeMode = ThemeMode.light;
   Color _seedColor = Colors.blue;
 
-  ThemeMode get themeMode => _themeMode;
-  Color get seedColor => _seedColor;
+  void _toggleTheme() => setState(() {
+    _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+  });
 
-  void toggleTheme() {
-    setState(() {
-      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
-    });
-  }
-
-  void setSeedColor(Color color) {
-    setState(() => _seedColor = color);
-  }
+  void _setSeedColor(Color c) => setState(() => _seedColor = c);
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +64,13 @@ class RandomFlutterAppState extends State<RandomFlutterApp> {
         useMaterial3: true,
         brightness: Brightness.dark,
       ),
-      home: const SplashScreen(),
+      home: _ThemeState(
+        themeMode: _themeMode,
+        seedColor: _seedColor,
+        toggleTheme: _toggleTheme,
+        setSeedColor: _setSeedColor,
+        child: const SplashScreen(),
+      ),
     );
   }
 }
@@ -126,12 +144,12 @@ class _SplashScreenState extends State<SplashScreen> {
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 8,
-                  backgroundColor: Colors.grey[200],
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            Text(status, style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600])),
+            Text(status, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           ],
         ),
       ),
@@ -468,7 +486,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           type: BottomNavigationBarType.fixed,
           backgroundColor: theme.cardColor,
           selectedItemColor: theme.colorScheme.primary,
-          unselectedItemColor: Colors.grey[400],
+          unselectedItemColor: theme.colorScheme.onSurfaceVariant,
           selectedFontSize: 11,
           unselectedFontSize: 11,
           elevation: 0,
@@ -544,7 +562,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     const SizedBox(height: 16),
                     Text(
                       availableNumbers.isEmpty ? 'Tap SET to start' : 'Remaining: ${availableNumbers.length}',
-                      style: const TextStyle(fontSize: 15, color: Colors.grey),
+                      style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -557,13 +575,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               child: ElevatedButton(
                 onPressed: availableNumbers.isNotEmpty && !isAnimating ? _drawNumber : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  disabledBackgroundColor: Colors.grey[300],
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  elevation: 4,
-                ),
-                child: const Text('DRAW NOW', style: TextStyle(fontSize: 17)),
+                    backgroundColor: primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 4,
+                  ),
+                  child: const Text('DRAW NOW', style: TextStyle(fontSize: 17)),
               ),
             ),
             const SizedBox(height: 10),
@@ -579,7 +596,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 child: SingleChildScrollView(
                   child: Text(
                     drawnNumbers.isEmpty ? 'History appears here...' : drawnNumbers.reversed.join(', '),
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ),
               ),
@@ -650,7 +667,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     const SizedBox(height: 8),
                     Text(
                       availableNames.isEmpty ? 'Waiting for names...' : 'Remaining: ${availableNames.length}',
-                      style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -665,7 +682,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primary,
                   foregroundColor: theme.colorScheme.onPrimary,
-                  disabledBackgroundColor: Colors.grey[300],
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 4,
                 ),
@@ -738,7 +754,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primary,
                   foregroundColor: theme.colorScheme.onPrimary,
-                  disabledBackgroundColor: Colors.grey[300],
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 3,
                 ),
@@ -829,10 +844,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildSettingsTab(ThemeData theme) {
-    final appState = RandomFlutterApp.of(context);
-    if (appState == null) return const SizedBox();
-    final isDark = appState.themeMode == ThemeMode.dark;
-    final seed = appState.seedColor;
+    final themeState = _ThemeState.of(context);
+    if (themeState == null) return const SizedBox();
+    final isDark = themeState.themeMode == ThemeMode.dark;
+    final seed = themeState.seedColor;
 
     const colorOptions = [
       Colors.blue,
@@ -868,7 +883,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     title: const Text('Dark Mode'),
                     subtitle: const Text('Toggle dark theme'),
                     value: isDark,
-                    onChanged: (_) => appState.toggleTheme(),
+                    onChanged: (_) => themeState.toggleTheme(),
                     secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode, color: theme.colorScheme.primary),
                   ),
                   const Divider(height: 1, indent: 16, endIndent: 16),
@@ -891,7 +906,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               children: colorOptions.map((c) {
                 final selected = seed.toARGB32() == c.toARGB32();
                 return GestureDetector(
-                  onTap: () => appState.setSeedColor(c),
+                  onTap: () => themeState.setSeedColor(c),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     width: 50,
