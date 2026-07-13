@@ -1200,7 +1200,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 }
 
 // ============================================================
-// COIN PAINTER
+// COIN PAINTER — realistic gold coin
 // ============================================================
 class _CoinPainter extends CustomPainter {
   final bool isHeads;
@@ -1212,77 +1212,128 @@ class _CoinPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    // Outer edge shadow
-    final edgeShadow = Paint()
-      ..shader = RadialGradient(
-        colors: [Colors.black.withValues(alpha: 0), Colors.black.withValues(alpha: 0.15)],
+    // Drop shadow
+    final shadow = Paint()
+      ..color = Colors.black.withValues(alpha: 0.2)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawCircle(Offset(center.dx + 2, center.dy + 3), radius, shadow);
+
+    // Outer rim (raised edge)
+    final rimOuter = Paint()
+      ..shader = SweepGradient(
+        center: Alignment.center,
+        colors: [
+          const Color(0xFFBF8F3F),
+          const Color(0xFFE8C76A),
+          const Color(0xFFF2D785),
+          const Color(0xFFD4A84B),
+          const Color(0xFFBF8F3F),
+        ],
       ).createShader(Rect.fromCircle(center: center, radius: radius));
-    canvas.drawCircle(center, radius, edgeShadow);
+    canvas.drawCircle(center, radius, rimOuter);
 
-    // Main body
-    final bodyPaint = Paint()
+    // Inner rim step
+    final rimInner = Paint()
+      ..shader = SweepGradient(
+        center: Alignment.center,
+        colors: [
+          const Color(0xFFA67B2E),
+          const Color(0xFFD4A84B),
+          const Color(0xFFE8C76A),
+          const Color(0xFFC49A3C),
+          const Color(0xFFA67B2E),
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: radius - 3));
+    canvas.drawCircle(center, radius - 3, rimInner);
+
+    // Main face with gold gradient
+    final face = Paint()
       ..shader = RadialGradient(
-        focal: const Alignment(-0.2, -0.3),
+        focal: const Alignment(-0.15, -0.2),
+        focalRadius: 0.3,
         colors: isHeads
-            ? [const Color(0xFFFFF3E0), const Color(0xFFFFB74D), const Color(0xFFF57C00)]
-            : [const Color(0xFFE8EAF6), const Color(0xFF9FA8DA), const Color(0xFF5C6BC0)],
-      ).createShader(Rect.fromCircle(center: center, radius: radius - 2));
-    canvas.drawCircle(center, radius - 2, bodyPaint);
+            ? [const Color(0xFFFFE082), const Color(0xFFF2C94C), const Color(0xFFD4A017), const Color(0xFFB8860B)]
+            : [const Color(0xFFF7DC6F), const Color(0xFFE8B830), const Color(0xFFC4941A), const Color(0xFFA0760A)],
+        stops: const [0.0, 0.3, 0.7, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: radius - 5));
+    canvas.drawCircle(center, radius - 5, face);
 
-    // Inner border ring
-    final ringPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-    final ringRect = Rect.fromCircle(center: center, radius: radius - 8);
-    ringPaint.shader = LinearGradient(
-      colors: [Colors.white.withValues(alpha: 0.6), Colors.white.withValues(alpha: 0.1)],
-    ).createShader(ringRect);
-    canvas.drawCircle(center, radius - 8, ringPaint);
-
-    // Small dots around the ring (coin edge texture)
-    final dotPaint = Paint()..color = Colors.white.withValues(alpha: 0.3);
-    for (int i = 0; i < 24; i++) {
-      final a = i * 2 * pi / 24;
-      final dx = center.dx + (radius - 14) * cos(a);
-      final dy = center.dy + (radius - 14) * sin(a);
-      canvas.drawCircle(Offset(dx, dy), 1.5, dotPaint);
+    // Edge dots (coin ridge texture)
+    final dot = Paint()..color = const Color(0xFFA67B2E).withValues(alpha: 0.4);
+    for (int i = 0; i < 36; i++) {
+      final a = i * 2 * pi / 36;
+      final dx = center.dx + (radius - 7) * cos(a);
+      final dy = center.dy + (radius - 7) * sin(a);
+      canvas.drawCircle(Offset(dx, dy), 0.8, dot);
     }
 
-    // Center text
+    // Inner fine ring
+    final fineRing = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0
+      ..color = const Color(0xFFA67B2E).withValues(alpha: 0.5);
+    canvas.drawCircle(center, radius - 12, fineRing);
+
+    // Center text — H or T
     final textPainter = TextPainter(
       text: TextSpan(
-        text: isHeads ? '\u2605' : '\u2663',
+        text: isHeads ? 'H' : 'T',
         style: TextStyle(
-          fontSize: radius * 0.55,
-          color: isHeads ? const Color(0xFFE65100) : const Color(0xFF283593),
-          fontWeight: FontWeight.bold,
+          fontSize: radius * 0.75,
+          color: const Color(0xFF6B4E1B),
+          fontWeight: FontWeight.w900,
+          letterSpacing: 2,
         ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    textPainter.paint(canvas, Offset(center.dx - textPainter.width / 2, center.dy - textPainter.height / 2 - radius * 0.1));
+    textPainter.paint(
+      canvas,
+      Offset(center.dx - textPainter.width / 2, center.dy - textPainter.height / 2),
+    );
 
-    // Denomination text
-    final valPainter = TextPainter(
+    // Bottom small text
+    final yearPainter = TextPainter(
       text: TextSpan(
-        text: isHeads ? '1' : '2',
+        text: '2024',
         style: TextStyle(
-          fontSize: radius * 0.25,
-          color: isHeads ? const Color(0xFFBF360C) : const Color(0xFF1A237E),
-          fontWeight: FontWeight.bold,
+          fontSize: radius * 0.14,
+          color: const Color(0xFF8B6914),
+          fontWeight: FontWeight.w500,
         ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    valPainter.paint(canvas, Offset(center.dx - valPainter.width / 2, center.dy + radius * 0.25));
+    yearPainter.paint(
+      canvas,
+      Offset(center.dx - yearPainter.width / 2, center.dy + radius * 0.5),
+    );
 
-    // Glossy highlight
-    final glossPaint = Paint()
+    // Top "RANDOM" arc text
+    final topPainter = TextPainter(
+      text: TextSpan(
+        text: 'RANDOM',
+        style: TextStyle(
+          fontSize: radius * 0.12,
+          color: const Color(0xFF8B6914),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    topPainter.paint(
+      canvas,
+      Offset(center.dx - topPainter.width / 2, center.dy - radius * 0.6),
+    );
+
+    // Glossy sheen overlay
+    final gloss = Paint()
       ..shader = RadialGradient(
-        focal: const Alignment(-0.4, -0.4),
-        colors: [Colors.white.withValues(alpha: 0.4), Colors.white.withValues(alpha: 0)],
+        focal: const Alignment(-0.35, -0.35),
+        focalRadius: 0.1,
+        colors: [Colors.white.withValues(alpha: 0.35), Colors.white.withValues(alpha: 0)],
       ).createShader(Rect.fromCircle(center: center, radius: radius));
-    canvas.drawCircle(center, radius, glossPaint);
+    canvas.drawCircle(center, radius, gloss);
   }
 
   @override
@@ -1494,23 +1545,40 @@ class _DiceRollerPage extends StatefulWidget {
   State<_DiceRollerPage> createState() => _DiceRollerPageState();
 }
 
-class _DiceRollerPageState extends State<_DiceRollerPage> {
+class _DiceRollerPageState extends State<_DiceRollerPage> with TickerProviderStateMixin {
   int _result = 1;
   bool _isRolling = false;
   final _random = Random();
+  late AnimationController _rollCtrl;
+  late Animation<double> _rollAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _rollCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _rollAnim = CurvedAnimation(parent: _rollCtrl, curve: Curves.easeOut);
+  }
 
   void _roll() {
     if (_isRolling) return;
+    _rollCtrl.forward(from: 0);
     setState(() => _isRolling = true);
     int count = 0;
-    Timer.periodic(const Duration(milliseconds: 70), (t) {
+    Timer.periodic(const Duration(milliseconds: 60), (t) {
       count++;
       setState(() => _result = _random.nextInt(6) + 1);
-      if (count > 18) {
+      if (count > 20) {
         t.cancel();
+        _rollCtrl.reverse();
         setState(() => _isRolling = false);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _rollCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -1529,28 +1597,43 @@ class _DiceRollerPageState extends State<_DiceRollerPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedScale(
-              scale: _isRolling ? 1.1 : 1.0,
-              duration: const Duration(milliseconds: 150),
-              child: Transform(
-                transform: Matrix4.identity()
-                  ..setEntry(3, 2, 0.001)
-                  ..rotateX(-0.08)
-                  ..rotateY(0.12),
-                alignment: Alignment.center,
-                child: SizedBox(
-                  width: 140,
-                  height: 140,
-                  child: CustomPaint(
-                    size: const Size(140, 140),
-                    painter: _DicePainter(value: _result),
+            AnimatedBuilder(
+              animation: _rollAnim,
+              builder: (context, _) {
+                final rollVal = _rollAnim.value;
+                final rx = rollVal * 6 * pi;
+                final ry = rollVal * 4 * pi;
+                final scale = 1.0 + (rollVal * 0.08);
+                return Transform.scale(
+                  scale: scale,
+                  child: Transform(
+                    transform: Matrix4.identity()
+                      ..setEntry(3, 2, 0.001)
+                      ..rotateX(rx)
+                      ..rotateY(ry)
+                      ..rotateZ(rollVal * 0.2),
+                    alignment: Alignment.center,
+                    child: SizedBox(
+                      width: 140,
+                      height: 140,
+                      child: CustomPaint(
+                        size: const Size(140, 140),
+                        painter: _DicePainter(value: _result),
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
             const SizedBox(height: 24),
-            Text('Result: $_result'.toUpperCase(),
-              style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: primary)),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                'Result: $_result'.toUpperCase(),
+                key: ValueKey(_result),
+                style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: primary),
+              ),
+            ),
             const SizedBox(height: 28),
             SizedBox(
               width: 200,
