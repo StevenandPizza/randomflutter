@@ -1290,7 +1290,7 @@ class _CoinPainter extends CustomPainter {
 }
 
 // ============================================================
-// DICE FACE PAINTER
+// DICE FACE PAINTER (3D realistic)
 // ============================================================
 class _DicePainter extends CustomPainter {
   final int value;
@@ -1301,56 +1301,79 @@ class _DicePainter extends CustomPainter {
     1: [Offset(0.5, 0.5)],
     2: [Offset(0.75, 0.25), Offset(0.25, 0.75)],
     3: [Offset(0.75, 0.25), Offset(0.5, 0.5), Offset(0.25, 0.75)],
-    4: [Offset(0.25, 0.25), Offset(0.75, 0.25), Offset(0.25, 0.75), Offset(0.75, 0.75)],
-    5: [Offset(0.25, 0.25), Offset(0.75, 0.25), Offset(0.5, 0.5), Offset(0.25, 0.75), Offset(0.75, 0.75)],
-    6: [Offset(0.25, 0.25), Offset(0.75, 0.25), Offset(0.25, 0.5), Offset(0.75, 0.5), Offset(0.25, 0.75), Offset(0.75, 0.75)],
+    4: [Offset(0.23, 0.23), Offset(0.77, 0.23), Offset(0.23, 0.77), Offset(0.77, 0.77)],
+    5: [
+      Offset(0.23, 0.23), Offset(0.77, 0.23),
+      Offset(0.5, 0.5),
+      Offset(0.23, 0.77), Offset(0.77, 0.77),
+    ],
+    6: [
+      Offset(0.23, 0.17), Offset(0.77, 0.17),
+      Offset(0.23, 0.5), Offset(0.77, 0.5),
+      Offset(0.23, 0.83), Offset(0.77, 0.83),
+    ],
   };
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    final margin = w * 0.08;
+    final margin = w * 0.1;
+    final r = w * 0.18;
 
-    // Shadow
+    // 3D shadow
     final shadow = Paint()
-      ..color = Colors.black.withValues(alpha: 0.12)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(2, 3, w, h), Radius.circular(w * 0.18)), shadow);
+      ..color = Colors.black.withValues(alpha: 0.18)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(3, 5, w, h), Radius.circular(r)), shadow);
 
-    // White body
+    // Main body with 3D gradient shading
     final body = Paint()
-      ..color = const Color(0xFFFAFAFA)
       ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [const Color(0xFFFFFFFF), const Color(0xFFE0E0E0)],
+        colors: [
+          const Color(0xFFFFFFFF),
+          const Color(0xFFF5F5F5),
+          const Color(0xFFE8E8E8),
+          const Color(0xFFD0D0D0),
+        ],
+        stops: const [0.0, 0.3, 0.7, 1.0],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
-    final rrect = RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, w, h), Radius.circular(w * 0.18));
+    final rrect = RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, w, h), Radius.circular(r));
     canvas.drawRRect(rrect, body);
 
-    // Inner border
-    final border = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..color = Colors.black.withValues(alpha: 0.1);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(Rect.fromLTWH(1.5, 1.5, w - 3, h - 3), Radius.circular(w * 0.16)),
-      border,
-    );
+    // Edge highlight (top-left)
+    final edgeLight = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Colors.white.withValues(alpha: 0.6), Colors.white.withValues(alpha: 0)],
+      ).createShader(Rect.fromLTWH(0, 0, w * 0.6, h * 0.6));
+    canvas.drawRRect(rrect, edgeLight);
 
-    // Dots
-    final dotR = w * 0.08;
-    final dotPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [const Color(0xFF424242), const Color(0xFF212121)],
-      ).createShader(Rect.fromCircle(center: Offset.zero, radius: dotR));
-
+    // Dots - with indented 3D effect
     final positions = _dotPositions[value] ?? [];
+    final dotR = w * 0.075;
+
     for (final pos in positions) {
       final dx = margin + pos.dx * (w - 2 * margin);
       final dy = margin + pos.dy * (h - 2 * margin);
-      canvas.drawCircle(Offset(dx, dy), dotR, dotPaint);
+
+      // Dot shadow (bottom-right offset for indent effect)
+      final dotShadow = Paint()
+        ..shader = RadialGradient(
+          colors: [Colors.black.withValues(alpha: 0.3), Colors.black.withValues(alpha: 0)],
+        ).createShader(Rect.fromCircle(center: Offset(dx + 1, dy + 1), radius: dotR + 1));
+      canvas.drawCircle(Offset(dx + 1, dy + 1), dotR + 1, dotShadow);
+
+      // Dot main
+      final dot = Paint()
+        ..shader = RadialGradient(
+          focal: const Alignment(0.3, 0.3),
+          colors: [const Color(0xFF555555), const Color(0xFF1A1A1A)],
+        ).createShader(Rect.fromCircle(center: Offset(dx, dy), radius: dotR));
+      canvas.drawCircle(Offset(dx, dy), dotR, dot);
     }
   }
 
@@ -1473,11 +1496,8 @@ class _DiceRollerPage extends StatefulWidget {
 
 class _DiceRollerPageState extends State<_DiceRollerPage> {
   int _result = 1;
-  int _sides = 6;
   bool _isRolling = false;
   final _random = Random();
-
-  static const _sideOptions = [4, 6, 8, 10, 12, 20];
 
   void _roll() {
     if (_isRolling) return;
@@ -1485,21 +1505,12 @@ class _DiceRollerPageState extends State<_DiceRollerPage> {
     int count = 0;
     Timer.periodic(const Duration(milliseconds: 70), (t) {
       count++;
-      setState(() => _result = _random.nextInt(_sides) + 1);
+      setState(() => _result = _random.nextInt(6) + 1);
       if (count > 18) {
         t.cancel();
         setState(() => _isRolling = false);
       }
     });
-  }
-
-  String _diceLabel(int sides, int val) {
-    if (sides == 4) return 'D4: $val';
-    if (sides == 8) return 'D8: $val';
-    if (sides == 10) return 'D10: $val';
-    if (sides == 12) return 'D12: $val';
-    if (sides == 20) return 'D20: $val';
-    return 'D6: $val';
   }
 
   @override
@@ -1519,54 +1530,35 @@ class _DiceRollerPageState extends State<_DiceRollerPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedScale(
-              scale: _isRolling ? 1.08 : 1.0,
+              scale: _isRolling ? 1.1 : 1.0,
               duration: const Duration(milliseconds: 150),
-              child: _sides == 6
-                  ? SizedBox(
-                      width: 130,
-                      height: 130,
-                      child: CustomPaint(
-                        size: const Size(130, 130),
-                        painter: _DicePainter(value: _result),
-                      ),
-                    )
-                  : Container(
-                      width: 130,
-                      height: 130,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [const Color(0xFFFFFFFF), const Color(0xFFE0E0E0)],
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 10, offset: const Offset(2, 4)),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$_result',
-                          style: TextStyle(
-                            fontSize: 52,
-                            color: const Color(0xFF424242),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
+              child: Transform(
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.001)
+                  ..rotateX(-0.08)
+                  ..rotateY(0.12),
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width: 140,
+                  height: 140,
+                  child: CustomPaint(
+                    size: const Size(140, 140),
+                    painter: _DicePainter(value: _result),
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 24),
-            Text(_diceLabel(_sides, _result),
-              style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: primary)),
+            Text('Result: $_result'.toUpperCase(),
+              style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: primary)),
             const SizedBox(height: 28),
             SizedBox(
               width: 200,
-              height: 48,
+              height: 52,
               child: ElevatedButton.icon(
                 onPressed: _isRolling ? null : _roll,
                 icon: Icon(_isRolling ? Icons.hourglass_top : Icons.casino),
-                label: Text(_isRolling ? 'Rolling...' : 'ROLL!', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+                label: Text(_isRolling ? 'Rolling...' : 'ROLL!', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primary,
                   foregroundColor: theme.colorScheme.onPrimary,
@@ -1574,25 +1566,6 @@ class _DiceRollerPageState extends State<_DiceRollerPage> {
                   elevation: 0,
                 ),
               ),
-            ),
-            const SizedBox(height: 32),
-            Text('Select Dice', style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _sideOptions.map((n) {
-                final selected = _sides == n;
-                return ChoiceChip(
-                  label: Text('D$n', style: TextStyle(
-                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                    color: selected ? theme.colorScheme.onPrimary : null,
-                  )),
-                  selected: selected,
-                  selectedColor: primary,
-                  onSelected: _isRolling ? null : (v) => setState(() { _sides = n; _result = 1; }),
-                );
-              }).toList(),
             ),
           ],
         ),
