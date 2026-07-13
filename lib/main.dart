@@ -197,9 +197,9 @@ class WheelPainter extends CustomPainter {
     canvas.restore();
 
     final dotPaint = Paint()..color = Colors.white;
-    canvas.drawCircle(Offset.zero, 12, dotPaint);
+    canvas.drawCircle(center, 12, dotPaint);
     dotPaint.color = Colors.grey[800]!;
-    canvas.drawCircle(Offset.zero, 8, dotPaint);
+    canvas.drawCircle(center, 8, dotPaint);
   }
 
   @override
@@ -382,7 +382,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final winnerIdx = _random.nextInt(items.length);
     final n = items.length;
     final anglePerItem = 2 * pi / n;
-    final winnerAngle = winnerIdx * anglePerItem;
+    final winnerAngle = winnerIdx * anglePerItem + anglePerItem / 2;
     final target = spinAngle + (2 * pi * _random.nextInt(4) + 4 * pi) + winnerAngle;
 
     Future.delayed(const Duration(milliseconds: 150), () => _playSound('spin.ogg'));
@@ -446,7 +446,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: IndexedStack(
         index: _currentTab,
         children: [
@@ -458,15 +458,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         ],
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Color(0xFFE0E3E8), width: 1)),
-          color: Colors.white,
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: theme.dividerColor, width: 1)),
+          color: theme.cardColor,
         ),
         child: BottomNavigationBar(
           currentIndex: _currentTab,
           onTap: (i) => setState(() => _currentTab = i),
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
+          backgroundColor: theme.cardColor,
           selectedItemColor: theme.colorScheme.primary,
           unselectedItemColor: Colors.grey[400],
           selectedFontSize: 11,
