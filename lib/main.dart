@@ -112,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -501,8 +501,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       filled: true,
                       fillColor: theme.cardColor,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.3))),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.3))),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -512,7 +512,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   onPressed: _setupNumbers,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: theme.colorScheme.onPrimary,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 2,
@@ -558,7 +558,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 onPressed: availableNumbers.isNotEmpty && !isAnimating ? _drawNumber : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   disabledBackgroundColor: Colors.grey[300],
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 4,
@@ -591,14 +591,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildNamesTab(ThemeData theme) {
-    final purple = const Color(0xFF7B2D8E);
+    final primary = theme.colorScheme.primary;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             const SizedBox(height: 8),
-            Text('RANDOM PICKER', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: purple)),
+            Text('RANDOM PICKER', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
             const SizedBox(height: 16),
             Expanded(
               flex: 3,
@@ -611,8 +611,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   hintText: 'Enter names\n(One per line)',
                   filled: true,
                   fillColor: theme.cardColor,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: purple.withValues(alpha: 0.3))),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: purple.withValues(alpha: 0.3))),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
                 ),
               ),
             ),
@@ -623,8 +623,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               child: ElevatedButton(
                 onPressed: _setupNames,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: purple,
-                  foregroundColor: Colors.white,
+                  backgroundColor: primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 2,
                 ),
@@ -644,7 +644,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: FittedBox(
                         fit: BoxFit.contain,
-                        child: Text(animatingName, style: theme.textTheme.headlineMedium?.copyWith(color: purple, fontWeight: FontWeight.bold)),
+                        child: Text(animatingName, style: theme.textTheme.headlineMedium?.copyWith(color: primary, fontWeight: FontWeight.bold)),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -663,8 +663,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               child: ElevatedButton(
                 onPressed: availableNames.isNotEmpty && !isAnimating ? _drawName : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: purple,
-                  foregroundColor: Colors.white,
+                  backgroundColor: primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   disabledBackgroundColor: Colors.grey[300],
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 4,
@@ -679,13 +679,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildWheelTab(ThemeData theme) {
-    final green = Colors.green;
+    final primary = theme.colorScheme.primary;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
         child: Column(
           children: [
-            Text('SPIN THE WHEEL', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: green)),
+            Text('SPIN THE WHEEL', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
             const SizedBox(height: 8),
             Expanded(
               flex: 2,
@@ -699,8 +699,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   filled: true,
                   fillColor: theme.cardColor,
                   contentPadding: const EdgeInsets.all(12),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: green.withValues(alpha: 0.3))),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: green.withValues(alpha: 0.3))),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
                 ),
               ),
             ),
@@ -720,7 +720,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             painter: WheelPainter(items: wheelItems, spinAngle: spinAngle),
                           ),
                         ),
-                        const Icon(Icons.arrow_drop_down, size: 36, color: Colors.black87),
+                        Icon(Icons.arrow_drop_down, size: 36, color: theme.colorScheme.onSurface),
                       ],
                     );
                   },
@@ -728,7 +728,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               ),
             ),
             const SizedBox(height: 4),
-            Text(wheelResult, style: theme.textTheme.titleLarge?.copyWith(color: green, fontWeight: FontWeight.bold)),
+            Text(wheelResult, style: theme.textTheme.titleLarge?.copyWith(color: primary, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             SizedBox(
               width: double.infinity,
@@ -736,8 +736,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               child: ElevatedButton(
                 onPressed: isSpinning ? null : _spinWheel,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: green,
-                  foregroundColor: Colors.white,
+                  backgroundColor: primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   disabledBackgroundColor: Colors.grey[300],
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 3,
@@ -752,14 +752,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildTeamsTab(ThemeData theme) {
-    final orange = Colors.deepOrange;
+    final primary = theme.colorScheme.primary;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             const SizedBox(height: 8),
-            Text('TEAM SPLITTER', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: orange)),
+            Text('TEAM SPLITTER', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
             const SizedBox(height: 16),
             Expanded(
               flex: 3,
@@ -772,8 +772,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   hintText: 'Enter player names\n(One per line)',
                   filled: true,
                   fillColor: theme.cardColor,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: orange.withValues(alpha: 0.3))),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: orange.withValues(alpha: 0.3))),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
                 ),
               ),
             ),
@@ -788,8 +788,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       hintText: 'Number of teams',
                       filled: true,
                       fillColor: theme.cardColor,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: orange.withValues(alpha: 0.3))),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: orange.withValues(alpha: 0.3))),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -798,8 +798,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ElevatedButton(
                   onPressed: _splitTeams,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: orange,
-                    foregroundColor: Colors.white,
+                    backgroundColor: primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 2,
