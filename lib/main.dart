@@ -442,12 +442,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   Widget _buildNumbersTab(ThemeData theme) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: Column(
           children: [
-            const SizedBox(height: 8),
             Text('LUCKY NUMBERS', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -458,49 +457,53 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       hintText: 'Enter max number',
                       filled: true,
                       fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.blue.withValues(alpha: 0.3))),
                       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.blue.withValues(alpha: 0.3))),
                     ),
                     textAlign: TextAlign.center,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 ElevatedButton(
                   onPressed: _setupNumbers,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 2,
                   ),
-                  child: const Text('SET UP'),
+                  child: const Text('SET'),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Expanded(
-              flex: 3,
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              flex: 5,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(animatingNumber, style: theme.textTheme.displayLarge?.copyWith(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 72)),
-                    const SizedBox(height: 12),
+                    Text(animatingNumber, style: const TextStyle(fontSize: 80, fontWeight: FontWeight.bold, color: Colors.blue)),
+                    const SizedBox(height: 16),
                     Text(
-                      availableNumbers.isEmpty ? 'Enter number and tap SET UP' : 'Remaining: ${availableNumbers.length}',
-                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
+                      availableNumbers.isEmpty ? 'Tap SET to start' : 'Remaining: ${availableNumbers.length}',
+                      style: const TextStyle(fontSize: 15, color: Colors.grey),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
-              height: 52,
+              height: 50,
               child: ElevatedButton(
                 onPressed: availableNumbers.isNotEmpty && !isAnimating ? _drawNumber : null,
                 style: ElevatedButton.styleFrom(
@@ -510,22 +513,23 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 4,
                 ),
-                child: const Text('DRAW NOW', style: TextStyle(fontSize: 18)),
+                child: const Text('DRAW NOW', style: TextStyle(fontSize: 17)),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Expanded(
               flex: 2,
-              child: Card(
-                elevation: 1,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      drawnNumbers.isEmpty ? 'No history yet...' : drawnNumbers.reversed.join(', '),
-                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-                    ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+                ),
+                padding: const EdgeInsets.all(10),
+                child: SingleChildScrollView(
+                  child: Text(
+                    drawnNumbers.isEmpty ? 'History appears here...' : drawnNumbers.reversed.join(', '),
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                 ),
               ),
@@ -622,12 +626,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   Widget _buildWheelTab(ThemeData theme) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(15),
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
         child: Column(
           children: [
-            const SizedBox(height: 4),
             Text('SPIN THE WHEEL', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.green)),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Expanded(
               flex: 3,
               child: TextField(
@@ -636,52 +639,56 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 expands: true,
                 textAlignVertical: TextAlignVertical.top,
                 decoration: InputDecoration(
-                  hintText: 'Enter items\n(One per line, min 2)',
+                  hintText: 'Enter items (one per line)',
                   filled: true,
                   fillColor: Colors.white,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green.withValues(alpha: 0.3))),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green.withValues(alpha: 0.3))),
+                  contentPadding: const EdgeInsets.all(12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.green.withValues(alpha: 0.3))),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.green.withValues(alpha: 0.3))),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Expanded(
               flex: 3,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final wheelSize = min(constraints.maxWidth * 0.85, 240.0);
-                  return Stack(
-                    alignment: Alignment.topCenter,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: CustomPaint(
-                          size: Size(wheelSize, wheelSize),
-                          painter: WheelPainter(items: wheelItems, spinAngle: spinAngle),
+              child: Center(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final s = min(constraints.maxWidth * 0.7, constraints.maxHeight * 0.85);
+                    final size = min(s, 200.0);
+                    return Stack(
+                      alignment: Alignment.topCenter,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: CustomPaint(
+                            size: Size(size, size),
+                            painter: WheelPainter(items: wheelItems, spinAngle: spinAngle),
+                          ),
                         ),
-                      ),
-                      const Icon(Icons.arrow_drop_down, size: 44, color: Colors.black87),
-                    ],
-                  );
-                },
+                        const Icon(Icons.arrow_drop_down, size: 36, color: Colors.black87),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(wheelResult, style: theme.textTheme.headlineSmall?.copyWith(color: Colors.green, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
+            Text(wheelResult, style: theme.textTheme.titleLarge?.copyWith(color: Colors.green, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
             SizedBox(
               width: double.infinity,
-              height: 52,
+              height: 48,
               child: ElevatedButton(
                 onPressed: isSpinning ? null : _spinWheel,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor: Colors.grey[300],
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  elevation: 4,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 3,
                 ),
-                child: Text(isSpinning ? 'SPINNING...' : 'SPIN NOW!', style: const TextStyle(fontSize: 18)),
+                child: Text(isSpinning ? 'SPINNING...' : 'SPIN NOW!', style: const TextStyle(fontSize: 16)),
               ),
             ),
           ],
