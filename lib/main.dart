@@ -465,7 +465,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final n = items.length;
     final anglePerItem = 2 * pi / n;
     final winnerAngle = winnerIdx * anglePerItem + anglePerItem / 2;
-    final target = spinAngle + (2 * pi * _random.nextInt(4) + 4 * pi) + winnerAngle;
+    final target = spinAngle + (2 * pi * _random.nextInt(4) + 4 * pi) - winnerAngle;
 
     Future.delayed(const Duration(milliseconds: 150), () => _playSound('spin.ogg'));
 
