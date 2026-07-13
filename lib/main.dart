@@ -50,26 +50,26 @@ class _RandomFlutterAppState extends State<RandomFlutterApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'RandomSteven',
-      debugShowCheckedModeBanner: false,
+    return _ThemeState(
       themeMode: _themeMode,
-      theme: ThemeData(
-        colorSchemeSeed: _seedColor,
-        useMaterial3: true,
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        colorSchemeSeed: _seedColor,
-        useMaterial3: true,
-        brightness: Brightness.dark,
-      ),
-      home: _ThemeState(
+      seedColor: _seedColor,
+      toggleTheme: _toggleTheme,
+      setSeedColor: _setSeedColor,
+      child: MaterialApp(
+        title: 'RandomSteven',
+        debugShowCheckedModeBanner: false,
         themeMode: _themeMode,
-        seedColor: _seedColor,
-        toggleTheme: _toggleTheme,
-        setSeedColor: _setSeedColor,
-        child: const SplashScreen(),
+        theme: ThemeData(
+          colorSchemeSeed: _seedColor,
+          useMaterial3: true,
+          brightness: Brightness.light,
+        ),
+        darkTheme: ThemeData(
+          colorSchemeSeed: _seedColor,
+          useMaterial3: true,
+          brightness: Brightness.dark,
+        ),
+        home: const SplashScreen(),
       ),
     );
   }
