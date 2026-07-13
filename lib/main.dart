@@ -8,18 +8,49 @@ void main() {
   runApp(const RandomFlutterApp());
 }
 
-class RandomFlutterApp extends StatelessWidget {
+class RandomFlutterApp extends StatefulWidget {
   const RandomFlutterApp({super.key});
+
+  @override
+  State<RandomFlutterApp> createState() => RandomFlutterAppState();
+
+  static RandomFlutterAppState? of(BuildContext context) {
+    return context.findAncestorStateOfType<RandomFlutterAppState>();
+  }
+}
+
+class RandomFlutterAppState extends State<RandomFlutterApp> {
+  ThemeMode _themeMode = ThemeMode.light;
+  Color _seedColor = Colors.blue;
+
+  ThemeMode get themeMode => _themeMode;
+  Color get seedColor => _seedColor;
+
+  void toggleTheme() {
+    setState(() {
+      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    });
+  }
+
+  void setSeedColor(Color color) {
+    setState(() => _seedColor = color);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'RandomSteven',
       debugShowCheckedModeBanner: false,
+      themeMode: _themeMode,
       theme: ThemeData(
-        colorSchemeSeed: Colors.blue,
+        colorSchemeSeed: _seedColor,
         useMaterial3: true,
         brightness: Brightness.light,
+      ),
+      darkTheme: ThemeData(
+        colorSchemeSeed: _seedColor,
+        useMaterial3: true,
+        brightness: Brightness.dark,
       ),
       home: const SplashScreen(),
     );
@@ -190,11 +221,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   final _audioPlayer = AudioPlayer();
   final _random = Random();
   bool _soundsReady = false;
+  bool _soundEnabled = true;
 
   // Numbers state
   List<int> availableNumbers = [];
   List<int> drawnNumbers = [];
-  final TextEditingController maxInputCtrl = TextEditingController();
+  final TextEditingController maxInputCtrl = TextEditingController(text: '1');
 
   // Names state
   List<String> availableNames = [];
@@ -218,11 +250,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   String animatingName = 'Who is next?';
   int _animatingCount = 0;
 
-  final List<Color> tabColors = [
-    Colors.blue,
-    const Color(0xFF7B2D8E),
-    Colors.green,
-    Colors.deepOrange,
+  final List<IconData> tabIcons = [
+    Icons.numbers,
+    Icons.people,
+    Icons.sync,
+    Icons.group,
+    Icons.settings,
   ];
 
   @override
@@ -241,7 +274,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _playSound(String name) async {
-    if (!_soundsReady) return;
+    if (!_soundsReady || !_soundEnabled) return;
     try {
       await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource(name));
@@ -398,6 +431,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     setState(() => teamResult = buf.toString().trim());
   }
 
+  String _label(int i) {
+    return switch (i) {
+      0 => 'Numbers',
+      1 => 'Names',
+      2 => 'Wheel',
+      3 => 'Teams',
+      _ => 'Settings',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -411,6 +454,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           _buildNamesTab(theme),
           _buildWheelTab(theme),
           _buildTeamsTab(theme),
+          _buildSettingsTab(theme),
         ],
       ),
       bottomNavigationBar: Container(
@@ -423,29 +467,28 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           onTap: (i) => setState(() => _currentTab = i),
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
-          selectedItemColor: tabColors[_currentTab],
+          selectedItemColor: theme.colorScheme.primary,
           unselectedItemColor: Colors.grey[400],
           selectedFontSize: 11,
           unselectedFontSize: 11,
           elevation: 0,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.numbers), label: 'Numbers'),
-            BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Names'),
-            BottomNavigationBarItem(icon: Icon(Icons.sync), label: 'Wheel'),
-            BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Teams'),
-          ],
+          items: List.generate(5, (i) => BottomNavigationBarItem(
+            icon: Icon(tabIcons[i]),
+            label: _label(i),
+          )),
         ),
       ),
     );
   }
 
   Widget _buildNumbersTab(ThemeData theme) {
+    final primary = theme.colorScheme.primary;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: Column(
           children: [
-            Text('LUCKY NUMBERS', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text('LUCKY NUMBERS', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -456,10 +499,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     decoration: InputDecoration(
                       hintText: 'Enter max number',
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: theme.cardColor,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.blue.withValues(alpha: 0.3))),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.blue.withValues(alpha: 0.3))),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.3))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.3))),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -468,7 +511,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ElevatedButton(
                   onPressed: _setupNumbers,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -482,15 +525,22 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             Expanded(
               flex: 5,
               child: Container(
+                width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: theme.cardColor,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(animatingNumber, style: const TextStyle(fontSize: 80, fontWeight: FontWeight.bold, color: Colors.blue)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: Text(animatingNumber, style: TextStyle(fontSize: 120, fontWeight: FontWeight.bold, color: primary)),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       availableNumbers.isEmpty ? 'Tap SET to start' : 'Remaining: ${availableNumbers.length}',
@@ -507,7 +557,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               child: ElevatedButton(
                 onPressed: availableNumbers.isNotEmpty && !isAnimating ? _drawNumber : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: primary,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor: Colors.grey[300],
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -521,7 +571,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               flex: 2,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: theme.cardColor,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
                 ),
@@ -560,7 +610,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 decoration: InputDecoration(
                   hintText: 'Enter names\n(One per line)',
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: theme.cardColor,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: purple.withValues(alpha: 0.3))),
                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: purple.withValues(alpha: 0.3))),
                 ),
@@ -590,8 +640,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(animatingName, style: theme.textTheme.headlineMedium?.copyWith(color: purple, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: Text(animatingName, style: theme.textTheme.headlineMedium?.copyWith(color: purple, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       availableNames.isEmpty ? 'Waiting for names...' : 'Remaining: ${availableNames.length}',
@@ -624,15 +679,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildWheelTab(ThemeData theme) {
+    final green = Colors.green;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
         child: Column(
           children: [
-            Text('SPIN THE WHEEL', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.green)),
+            Text('SPIN THE WHEEL', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: green)),
             const SizedBox(height: 8),
             Expanded(
-              flex: 3,
+              flex: 2,
               child: TextField(
                 controller: wheelInputCtrl,
                 maxLines: null,
@@ -641,21 +697,19 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 decoration: InputDecoration(
                   hintText: 'Enter items (one per line)',
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: theme.cardColor,
                   contentPadding: const EdgeInsets.all(12),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.green.withValues(alpha: 0.3))),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.green.withValues(alpha: 0.3))),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: green.withValues(alpha: 0.3))),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: green.withValues(alpha: 0.3))),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
             Expanded(
-              flex: 3,
+              flex: 4,
               child: Center(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final s = min(constraints.maxWidth * 0.7, constraints.maxHeight * 0.85);
-                    final size = min(s, 200.0);
+                    final size = min(constraints.maxWidth * 0.88, constraints.maxHeight * 0.88);
                     return Stack(
                       alignment: Alignment.topCenter,
                       children: [
@@ -673,8 +727,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            const SizedBox(height: 6),
-            Text(wheelResult, style: theme.textTheme.titleLarge?.copyWith(color: Colors.green, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(wheelResult, style: theme.textTheme.titleLarge?.copyWith(color: green, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             SizedBox(
               width: double.infinity,
@@ -682,7 +736,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               child: ElevatedButton(
                 onPressed: isSpinning ? null : _spinWheel,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: green,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor: Colors.grey[300],
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -717,7 +771,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 decoration: InputDecoration(
                   hintText: 'Enter player names\n(One per line)',
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: theme.cardColor,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: orange.withValues(alpha: 0.3))),
                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: orange.withValues(alpha: 0.3))),
                 ),
@@ -733,7 +787,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     decoration: InputDecoration(
                       hintText: 'Number of teams',
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: theme.cardColor,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: orange.withValues(alpha: 0.3))),
                       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: orange.withValues(alpha: 0.3))),
                     ),
@@ -767,6 +821,93 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   ),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsTab(ThemeData theme) {
+    final appState = RandomFlutterApp.of(context);
+    if (appState == null) return const SizedBox();
+    final isDark = appState.themeMode == ThemeMode.dark;
+    final seed = appState.seedColor;
+
+    const colorOptions = [
+      Colors.blue,
+      Colors.purple,
+      Colors.green,
+      Colors.red,
+      Colors.orange,
+      Colors.pink,
+      Colors.teal,
+      Colors.indigo,
+      Colors.cyan,
+      Colors.amber,
+    ];
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            Text('SETTINGS', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+            const SizedBox(height: 32),
+            Container(
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 2))],
+              ),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Dark Mode'),
+                    subtitle: const Text('Toggle dark theme'),
+                    value: isDark,
+                    onChanged: (_) => appState.toggleTheme(),
+                    secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode, color: theme.colorScheme.primary),
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  SwitchListTile(
+                    title: const Text('Sound Effects'),
+                    subtitle: const Text('Enable/disable sounds'),
+                    value: _soundEnabled,
+                    onChanged: (v) => setState(() => _soundEnabled = v),
+                    secondary: Icon(_soundEnabled ? Icons.volume_up : Icons.volume_off, color: theme.colorScheme.primary),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text('Theme Color', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 14,
+              runSpacing: 14,
+              children: colorOptions.map((c) {
+                final selected = seed.toARGB32() == c.toARGB32();
+                return GestureDetector(
+                  onTap: () => appState.setSeedColor(c),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: c,
+                      shape: BoxShape.circle,
+                      border: selected ? Border.all(color: isDark ? Colors.white : theme.colorScheme.surface, width: 3) : null,
+                      boxShadow: selected
+                          ? [BoxShadow(color: c.withValues(alpha: 0.5), blurRadius: 12, spreadRadius: 2)]
+                          : [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)],
+                    ),
+                    child: selected ? Icon(Icons.check, color: isDark ? Colors.white : Colors.white, size: 24) : null,
+                  ),
+                );
+              }).toList(),
             ),
           ],
         ),
