@@ -478,19 +478,20 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Expanded(
+              flex: 3,
               child: Card(
                 elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(animatingNumber, style: theme.textTheme.displayLarge?.copyWith(color: Colors.blue, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
+                    Text(animatingNumber, style: theme.textTheme.displayLarge?.copyWith(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 72)),
+                    const SizedBox(height: 12),
                     Text(
                       availableNumbers.isEmpty ? 'Enter number and tap SET UP' : 'Remaining: ${availableNumbers.length}',
-                      style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
+                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
                     ),
                   ],
                 ),
@@ -499,7 +500,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 52,
               child: ElevatedButton(
                 onPressed: availableNumbers.isNotEmpty && !isAnimating ? _drawNumber : null,
                 style: ElevatedButton.styleFrom(
@@ -509,11 +510,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 4,
                 ),
-                child: const Text('DRAW NOW', style: TextStyle(fontSize: 16)),
+                child: const Text('DRAW NOW', style: TextStyle(fontSize: 18)),
               ),
             ),
             const SizedBox(height: 12),
             Expanded(
+              flex: 2,
               child: Card(
                 elevation: 1,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -627,7 +629,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             Text('SPIN THE WHEEL', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.green)),
             const SizedBox(height: 12),
             Expanded(
-              flex: 2,
+              flex: 3,
               child: TextField(
                 controller: wheelInputCtrl,
                 maxLines: null,
@@ -644,19 +646,24 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 12),
             Expanded(
-              flex: 4,
-              child: Stack(
-                alignment: Alignment.topCenter,
-                children: [
-                  CustomPaint(
-                    size: const Size(260, 260),
-                    painter: WheelPainter(items: wheelItems, spinAngle: spinAngle),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.only(top: 4),
-                    child: Icon(Icons.arrow_drop_down, size: 50, color: Colors.black87),
-                  ),
-                ],
+              flex: 3,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final wheelSize = min(constraints.maxWidth * 0.85, 240.0);
+                  return Stack(
+                    alignment: Alignment.topCenter,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: CustomPaint(
+                          size: Size(wheelSize, wheelSize),
+                          painter: WheelPainter(items: wheelItems, spinAngle: spinAngle),
+                        ),
+                      ),
+                      const Icon(Icons.arrow_drop_down, size: 44, color: Colors.black87),
+                    ],
+                  );
+                },
               ),
             ),
             const SizedBox(height: 8),
@@ -664,7 +671,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
-              height: 54,
+              height: 52,
               child: ElevatedButton(
                 onPressed: isSpinning ? null : _spinWheel,
                 style: ElevatedButton.styleFrom(
