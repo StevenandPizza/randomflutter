@@ -58,7 +58,7 @@ class _RandomFlutterAppState extends State<RandomFlutterApp> {
       toggleTheme: _toggleTheme,
       setSeedColor: _setSeedColor,
       child: MaterialApp(
-        title: 'RandomSteven',
+        title: 'Random Anything',
         debugShowCheckedModeBanner: false,
         themeMode: _themeMode,
         theme: ThemeData(
