@@ -185,12 +185,6 @@ class WheelPainter extends CustomPainter {
     final n = items.length;
     final sweep = 2 * pi / n;
 
-    // Outer shadow ring
-    final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.1)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-    canvas.drawCircle(center, radius, shadowPaint);
-
     // Outer border
     final borderPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.5)
@@ -930,24 +924,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       return Stack(
                         alignment: Alignment.topCenter,
                         children: [
-                          // Drop shadow behind wheel
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Container(
-                              width: size,
-                              height: size,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: primary.withValues(alpha: 0.2),
-                                    blurRadius: 20,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                           // The wheel
                           Padding(
                             padding: const EdgeInsets.only(top: 8),
