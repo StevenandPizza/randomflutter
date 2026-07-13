@@ -1097,7 +1097,50 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             children: [
               const SizedBox(height: 8),
               Text('SETTINGS', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
+              // Games section
+              Text('GAMES', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: primary)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: GlassCard(
+                      borderRadius: 16,
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: InkWell(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _CoinFlipPage())),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Column(
+                          children: [
+                            Icon(Icons.monetization_on, size: 40, color: Colors.amber.shade600),
+                            const SizedBox(height: 8),
+                            Text('Coin Flip', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GlassCard(
+                      borderRadius: 16,
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: InkWell(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _DiceRollerPage())),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Column(
+                          children: [
+                            Icon(Icons.casino, size: 40, color: Colors.red.shade400),
+                            const SizedBox(height: 8),
+                            Text('Dice Roller', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
               GlassCard(
                 borderRadius: 16,
                 padding: EdgeInsets.zero,
@@ -1150,6 +1193,242 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// COIN FLIP PAGE
+// ============================================================
+class _CoinFlipPage extends StatefulWidget {
+  const _CoinFlipPage();
+
+  @override
+  State<_CoinFlipPage> createState() => _CoinFlipPageState();
+}
+
+class _CoinFlipPageState extends State<_CoinFlipPage> with TickerProviderStateMixin {
+  late AnimationController _ctrl;
+  bool _isFlipping = false;
+  bool _isHeads = true;
+  String _result = 'Tap to Flip';
+  final _random = Random();
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+  }
+
+  void _flip() {
+    if (_isFlipping) return;
+    _isHeads = _random.nextBool();
+    setState(() { _isFlipping = true; _result = 'Flipping...'; });
+    _ctrl.forward(from: 0).then((_) {
+      setState(() {
+        _isFlipping = false;
+        _result = _isHeads ? 'HEADS' : 'TAILS';
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text('Coin Flip'),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedBuilder(
+              animation: _ctrl,
+              builder: (context, _) {
+                final angle = _ctrl.value * pi;
+                final showHeads = angle < pi / 2;
+                return Transform(
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, 0.002)
+                    ..rotateY(angle),
+                  alignment: Alignment.center,
+                  child: Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: showHeads
+                            ? [Colors.amber.shade300, Colors.amber.shade700]
+                            : [Colors.blue.shade300, Colors.blue.shade700],
+                        focal: const Alignment(0.3, 0.3),
+                      ),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 16, offset: const Offset(0, 6)),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        showHeads ? 'H' : 'T',
+                        style: const TextStyle(fontSize: 64, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 32),
+            Text(_result, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: primary)),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: 180,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: _isFlipping ? null : _flip,
+                icon: Icon(_isFlipping ? Icons.hourglass_top : Icons.monetization_on),
+                label: Text(_isFlipping ? '...' : 'FLIP!', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// DICE ROLLER PAGE
+// ============================================================
+class _DiceRollerPage extends StatefulWidget {
+  const _DiceRollerPage();
+
+  @override
+  State<_DiceRollerPage> createState() => _DiceRollerPageState();
+}
+
+class _DiceRollerPageState extends State<_DiceRollerPage> {
+  int _result = 1;
+  int _sides = 6;
+  bool _isRolling = false;
+  final _random = Random();
+
+  static const _diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+  static const _sideOptions = [4, 6, 8, 10, 12, 20, 100];
+
+  void _roll() {
+    if (_isRolling) return;
+    setState(() => _isRolling = true);
+    int count = 0;
+    Timer.periodic(const Duration(milliseconds: 70), (t) {
+      count++;
+      setState(() => _result = _random.nextInt(_sides) + 1);
+      if (count > 18) {
+        t.cancel();
+        setState(() => _isRolling = false);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text('Dice Roller'),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedScale(
+              scale: _isRolling ? 1.1 : 1.0,
+              duration: const Duration(milliseconds: 150),
+              child: Container(
+                width: 130,
+                height: 130,
+                decoration: BoxDecoration(
+                  color: theme.cardColor,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 12, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    _sides == 6 && _result <= 6 ? _diceFaces[_result - 1] : '$_result',
+                    style: TextStyle(
+                      fontSize: _sides == 6 ? 72 : 56,
+                      color: primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text('D$_sides · Result: $_result',
+              style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: primary)),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: 200,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: _isRolling ? null : _roll,
+                icon: Icon(_isRolling ? Icons.hourglass_top : Icons.casino),
+                label: Text(_isRolling ? 'Rolling...' : 'ROLL!', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            Text('Select Dice', style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _sideOptions.map((n) {
+                final selected = _sides == n;
+                return ChoiceChip(
+                  label: Text('D$n', style: TextStyle(
+                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                    color: selected ? theme.colorScheme.onPrimary : null,
+                  )),
+                  selected: selected,
+                  selectedColor: primary,
+                  onSelected: _isRolling ? null : (v) => setState(() { _sides = n; _result = 1; }),
+                );
+              }).toList(),
+            ),
+          ],
         ),
       ),
     );
