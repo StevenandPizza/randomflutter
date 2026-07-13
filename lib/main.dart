@@ -958,18 +958,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           ),
                           // Pointer triangle at top
                           Positioned(
-                            top: 0,
-                            child: Container(
-                              width: 0,
-                              height: 0,
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  left: BorderSide(color: primary, width: 14),
-                                  right: BorderSide(color: primary, width: 14),
-                                  bottom: BorderSide(color: primary, width: 16),
-                                ),
-                              ),
-                            ),
+                            top: -2,
+                            child: Icon(Icons.arrow_drop_down, size: 42, color: primary),
                           ),
                         ],
                       );
