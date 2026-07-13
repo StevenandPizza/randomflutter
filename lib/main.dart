@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:math';
 import 'dart:async';
+import 'dart:ui' show ImageFilter;
 import 'package:audioplayers/audioplayers.dart';
 
 void main() {
@@ -130,7 +132,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -225,6 +227,52 @@ class WheelPainter extends CustomPainter {
 }
 
 // ============================================================
+// GLASS CARD WIDGET
+// ============================================================
+class GlassCard extends StatelessWidget {
+  final Widget child;
+  final double borderRadius;
+  final EdgeInsetsGeometry padding;
+  final double blur;
+  final double? height;
+  final double? width;
+
+  const GlassCard({
+    super.key,
+    required this.child,
+    this.borderRadius = 20,
+    this.padding = const EdgeInsets.all(16),
+    this.blur = 12,
+    this.height,
+    this.width,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+        child: Container(
+          height: height,
+          width: width,
+          padding: padding,
+          decoration: BoxDecoration(
+            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border.all(
+              color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+            ),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
 // MAIN SCREEN WITH TAB NAVIGATION
 // ============================================================
 class MainScreen extends StatefulWidget {
@@ -244,7 +292,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   // Numbers state
   List<int> availableNumbers = [];
   List<int> drawnNumbers = [];
-  final TextEditingController maxInputCtrl = TextEditingController(text: '1');
+  final TextEditingController maxInputCtrl = TextEditingController(text: '');
 
   // Names state
   List<String> availableNames = [];
@@ -268,18 +316,22 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   String animatingName = 'Who is next?';
   int _animatingCount = 0;
 
-  final List<IconData> tabIcons = [
-    Icons.numbers,
-    Icons.people,
-    Icons.sync,
-    Icons.group,
-    Icons.settings,
-  ];
+  late final AnimationController _springCtrl;
 
   @override
   void initState() {
     super.initState();
     _initSounds();
+    _springCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _springCtrl.forward();
+  }
+
+  void _springTap() {
+    _springCtrl.reset();
+    _springCtrl.forward();
   }
 
   Future<void> _initSounds() async {
@@ -299,6 +351,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     } catch (_) {}
   }
 
+  void _haptic() => HapticFeedback.lightImpact();
+
   @override
   void dispose() {
     maxInputCtrl.dispose();
@@ -307,6 +361,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     teamNamesCtrl.dispose();
     teamCountCtrl.dispose();
     _audioPlayer.dispose();
+    _springCtrl.dispose();
     super.dispose();
   }
 
@@ -314,6 +369,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final val = maxInputCtrl.text;
     if (val.isNotEmpty && int.tryParse(val) != null && int.parse(val) > 0) {
       _playSound('click.ogg');
+      _haptic();
       setState(() {
         availableNumbers = List.generate(int.parse(val), (i) => i + 1);
         drawnNumbers = [];
@@ -325,6 +381,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   void _drawNumber() {
     if (availableNumbers.isEmpty || isAnimating) return;
     _playSound('click.ogg');
+    _haptic();
+    _springTap();
     final chosen = availableNumbers[_random.nextInt(availableNumbers.length)];
     _startAnimation('number', chosen);
   }
@@ -334,6 +392,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final names = raw.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     if (names.isNotEmpty) {
       _playSound('click.ogg');
+      _haptic();
       setState(() => availableNames = names);
     }
   }
@@ -341,6 +400,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   void _drawName() {
     if (availableNames.isEmpty || isAnimating) return;
     _playSound('click.ogg');
+    _haptic();
+    _springTap();
     final chosen = availableNames[_random.nextInt(availableNames.length)];
     _startAnimation('name', chosen);
   }
@@ -377,6 +438,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             isAnimating = false;
           });
         }
+        _haptic();
         Future.delayed(const Duration(milliseconds: 100), () => _playSound('win.ogg'));
       }
     });
@@ -391,6 +453,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       return;
     }
     _playSound('click.ogg');
+    _haptic();
+    _springTap();
     setState(() {
       wheelItems = items;
       isSpinning = true;
@@ -418,6 +482,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           isSpinning = false;
           wheelResult = items[winnerIdx];
         });
+        _haptic();
         Future.delayed(const Duration(milliseconds: 100), () => _playSound('win.ogg'));
       } else {
         final eased = 1 - pow(1 - elapsed, 3).toDouble();
@@ -428,6 +493,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   void _splitTeams() {
     _playSound('click.ogg');
+    _haptic();
+    _springTap();
     final raw = teamNamesCtrl.text;
     final names = raw.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     final countStr = teamCountCtrl.text;
@@ -449,6 +516,81 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     setState(() => teamResult = buf.toString().trim());
   }
 
+  // ----- Bottom Sheet Helpers -----
+  void _showInputSheet({
+    required String title,
+    required String hintText,
+    required TextEditingController controller,
+    required VoidCallback onDone,
+    bool multiLine = true,
+    String buttonText = 'Done',
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24, right: 24, top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(title, style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                maxLines: multiLine ? 8 : 1,
+                autofocus: true,
+                keyboardType: multiLine ? TextInputType.multiline : TextInputType.number,
+                textAlignVertical: TextAlignVertical.top,
+                decoration: InputDecoration(
+                  hintText: hintText,
+                  filled: true,
+                  fillColor: Theme.of(ctx).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    onDone();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
+                  child: Text(buttonText, style: const TextStyle(fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   String _label(int i) {
     return switch (i) {
       0 => 'Numbers',
@@ -462,18 +604,24 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tabs = [
+      _buildNumbersTab(theme),
+      _buildNamesTab(theme),
+      _buildWheelTab(theme),
+      _buildTeamsTab(theme),
+      _buildSettingsTab(theme),
+    ];
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: IndexedStack(
-        index: _currentTab,
-        children: [
-          _buildNumbersTab(theme),
-          _buildNamesTab(theme),
-          _buildWheelTab(theme),
-          _buildTeamsTab(theme),
-          _buildSettingsTab(theme),
-        ],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 350),
+        switchInCurve: Curves.elasticOut,
+        switchOutCurve: Curves.easeIn,
+        transitionBuilder: (child, animation) {
+          return ScaleTransition(scale: animation, child: child);
+        },
+        child: KeyedSubtree(key: ValueKey(_currentTab), child: tabs[_currentTab]),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -499,100 +647,70 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     );
   }
 
+  final List<IconData> tabIcons = [
+    Icons.numbers,
+    Icons.people,
+    Icons.sync,
+    Icons.group,
+    Icons.settings,
+  ];
+
+  // ----- NUMBERS TAB -----
   Widget _buildNumbersTab(ThemeData theme) {
     final primary = theme.colorScheme.primary;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: Column(
-          children: [
-            Text('LUCKY NUMBERS', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: maxInputCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: 'Enter max number',
-                      filled: true,
-                      fillColor: theme.cardColor,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: _setupNumbers,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primary,
-                    foregroundColor: theme.colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 2,
-                  ),
-                  child: const Text('SET'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              flex: 5,
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: theme.cardColor,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
-                ),
+    final grad = [primary.withValues(alpha: 0.15), theme.colorScheme.surface.withValues(alpha: 0)];
+    return Container(
+      key: const ValueKey('tab_numbers'),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: grad),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Column(
+            children: [
+              Text('LUCKY NUMBERS', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
+              const SizedBox(height: 12),
+              GlassCard(
+                blur: 16,
+                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    SizedBox(
+                      height: 120,
                       child: FittedBox(
                         fit: BoxFit.contain,
                         child: Text(animatingNumber, style: TextStyle(fontSize: 120, fontWeight: FontWeight.bold, color: primary)),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     Text(
                       availableNumbers.isEmpty ? 'Tap SET to start' : 'Remaining: ${availableNumbers.length}',
-                      style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurfaceVariant),
+                      style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: availableNumbers.isNotEmpty && !isAnimating ? _drawNumber : null,
-                style: ElevatedButton.styleFrom(
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: availableNumbers.isNotEmpty && !isAnimating ? _drawNumber : null,
+                  style: ElevatedButton.styleFrom(
                     backgroundColor: primary,
                     foregroundColor: theme.colorScheme.onPrimary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    elevation: 4,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
                   ),
-                  child: const Text('DRAW NOW', style: TextStyle(fontSize: 17)),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              flex: 2,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: theme.cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+                  child: const Text('DRAW NOW', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
                 ),
-                padding: const EdgeInsets.all(10),
+              ),
+              const SizedBox(height: 10),
+              GlassCard(
+                blur: 12,
+                borderRadius: 14,
+                padding: const EdgeInsets.all(12),
                 child: SingleChildScrollView(
                   child: Text(
                     drawnNumbers.isEmpty ? 'History appears here...' : drawnNumbers.reversed.join(', '),
@@ -600,254 +718,307 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNamesTab(ThemeData theme) {
-    final primary = theme.colorScheme.primary;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const SizedBox(height: 8),
-            Text('RANDOM PICKER', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
-            const SizedBox(height: 16),
-            Expanded(
-              flex: 3,
-              child: TextField(
-                controller: namesInputCtrl,
-                maxLines: null,
-                expands: true,
-                textAlignVertical: TextAlignVertical.top,
-                decoration: InputDecoration(
-                  hintText: 'Enter names\n(One per line)',
-                  filled: true,
-                  fillColor: theme.cardColor,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _setupNames,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 2,
-                ),
-                child: const Text('LOAD LIST'),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              flex: 2,
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: FittedBox(
-                        fit: BoxFit.contain,
-                        child: Text(animatingName, style: theme.textTheme.headlineMedium?.copyWith(color: primary, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      availableNames.isEmpty ? 'Waiting for names...' : 'Remaining: ${availableNames.length}',
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: availableNames.isNotEmpty && !isAnimating ? _drawName : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  elevation: 4,
-                ),
-                child: const Text('PICK SOMEONE', style: TextStyle(fontSize: 16)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWheelTab(ThemeData theme) {
-    final primary = theme.colorScheme.primary;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-        child: Column(
-          children: [
-            Text('SPIN THE WHEEL', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
-            const SizedBox(height: 8),
-            Expanded(
-              flex: 2,
-              child: TextField(
-                controller: wheelInputCtrl,
-                maxLines: null,
-                expands: true,
-                textAlignVertical: TextAlignVertical.top,
-                decoration: InputDecoration(
-                  hintText: 'Enter items (one per line)',
-                  filled: true,
-                  fillColor: theme.cardColor,
-                  contentPadding: const EdgeInsets.all(12),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 4,
-              child: Center(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final size = min(constraints.maxWidth * 0.88, constraints.maxHeight * 0.88);
-                    return Stack(
-                      alignment: Alignment.topCenter,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: CustomPaint(
-                            size: Size(size, size),
-                            painter: WheelPainter(items: wheelItems, spinAngle: spinAngle),
-                          ),
-                        ),
-                        Icon(Icons.arrow_drop_down, size: 36, color: theme.colorScheme.onSurface),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(wheelResult, style: theme.textTheme.titleLarge?.copyWith(color: primary, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: isSpinning ? null : _spinWheel,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 3,
-                ),
-                child: Text(isSpinning ? 'SPINNING...' : 'SPIN NOW!', style: const TextStyle(fontSize: 16)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTeamsTab(ThemeData theme) {
-    final primary = theme.colorScheme.primary;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const SizedBox(height: 8),
-            Text('TEAM SPLITTER', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
-            const SizedBox(height: 16),
-            Expanded(
-              flex: 3,
-              child: TextField(
-                controller: teamNamesCtrl,
-                maxLines: null,
-                expands: true,
-                textAlignVertical: TextAlignVertical.top,
-                decoration: InputDecoration(
-                  hintText: 'Enter player names\n(One per line)',
-                  filled: true,
-                  fillColor: theme.cardColor,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: teamCountCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: 'Number of teams',
-                      filled: true,
-                      fillColor: theme.cardColor,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primary.withValues(alpha: 0.5))),
-                    ),
-                    textAlign: TextAlign.center,
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showInputSheet(
+                    title: 'Set Max Number',
+                    hintText: 'Enter max number',
+                    controller: maxInputCtrl,
+                    onDone: _setupNumbers,
+                    multiLine: false,
+                    buttonText: 'SET',
+                  ),
+                  icon: const Icon(Icons.edit, size: 18),
+                  label: const Text('Enter Numbers', style: TextStyle(fontSize: 15)),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    side: BorderSide(color: primary.withValues(alpha: 0.4)),
                   ),
                 ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: _splitTeams,
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ----- NAMES TAB -----
+  Widget _buildNamesTab(ThemeData theme) {
+    final primary = theme.colorScheme.primary;
+    final grad = [primary.withValues(alpha: 0.15), theme.colorScheme.surface.withValues(alpha: 0)];
+    return Container(
+      key: const ValueKey('tab_names'),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: grad),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              Text('RANDOM PICKER', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
+              const SizedBox(height: 16),
+              Expanded(
+                flex: 3,
+                child: GlassCard(
+                  borderRadius: 16,
+                  padding: const EdgeInsets.all(16),
+                  child: TextField(
+                    controller: namesInputCtrl,
+                    maxLines: null,
+                    expands: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: InputDecoration(
+                      hintText: 'Enter names\n(One per line)',
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _setupNames,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary,
                     foregroundColor: theme.colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
                   ),
-                  child: const Text('SPLIT'),
+                  child: const Text('LOAD LIST', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              flex: 4,
-              child: Card(
-                elevation: 1,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                flex: 2,
+                child: GlassCard(
+                  borderRadius: 16,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.contain,
+                        child: Text(animatingName, style: theme.textTheme.headlineMedium?.copyWith(color: primary, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        availableNames.isEmpty ? 'Waiting for names...' : 'Remaining: ${availableNames.length}',
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: availableNames.isNotEmpty && !isAnimating ? _drawName : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  child: const Text('PICK SOMEONE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ----- WHEEL TAB -----
+  Widget _buildWheelTab(ThemeData theme) {
+    final primary = theme.colorScheme.primary;
+    final grad = [primary.withValues(alpha: 0.15), theme.colorScheme.surface.withValues(alpha: 0)];
+    return Container(
+      key: const ValueKey('tab_wheel'),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: grad),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+          child: Column(
+            children: [
+              Text('SPIN THE WHEEL', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
+              const SizedBox(height: 8),
+              Expanded(
+                flex: 2,
+                child: GlassCard(
+                  borderRadius: 14,
+                  padding: const EdgeInsets.all(12),
+                  child: TextField(
+                    controller: wheelInputCtrl,
+                    maxLines: null,
+                    expands: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: InputDecoration(
+                      hintText: 'Enter items (one per line)',
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 4,
+                child: Center(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final size = min(constraints.maxWidth * 0.88, constraints.maxHeight * 0.88);
+                      return Stack(
+                        alignment: Alignment.topCenter,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: CustomPaint(
+                              size: Size(size, size),
+                              painter: WheelPainter(items: wheelItems, spinAngle: spinAngle),
+                            ),
+                          ),
+                          Icon(Icons.arrow_drop_down, size: 36, color: theme.colorScheme.onSurface),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(wheelResult, style: theme.textTheme.titleLarge?.copyWith(color: primary, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: isSpinning ? null : _spinWheel,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
+                  child: Text(isSpinning ? 'SPINNING...' : 'SPIN NOW!', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ----- TEAMS TAB -----
+  Widget _buildTeamsTab(ThemeData theme) {
+    final primary = theme.colorScheme.primary;
+    final grad = [primary.withValues(alpha: 0.15), theme.colorScheme.surface.withValues(alpha: 0)];
+    return Container(
+      key: const ValueKey('tab_teams'),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: grad),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              Text('TEAM SPLITTER', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
+              const SizedBox(height: 16),
+              Expanded(
+                flex: 3,
+                child: GlassCard(
+                  borderRadius: 16,
+                  padding: const EdgeInsets.all(16),
+                  child: TextField(
+                    controller: teamNamesCtrl,
+                    maxLines: null,
+                    expands: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: InputDecoration(
+                      hintText: 'Enter player names\n(One per line)',
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: GlassCard(
+                      borderRadius: 14,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: TextField(
+                        controller: teamCountCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: 'Number of teams',
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: _splitTeams,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
+                    ),
+                    child: const Text('SPLIT', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                flex: 4,
+                child: GlassCard(
+                  borderRadius: 14,
                   padding: const EdgeInsets.all(12),
                   child: SingleChildScrollView(
                     child: Text(teamResult, style: theme.textTheme.bodyMedium),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
+  // ----- SETTINGS TAB -----
   Widget _buildSettingsTab(ThemeData theme) {
     final themeState = _ThemeState.of(context);
     if (themeState == null) return const SizedBox();
     final isDark = themeState.themeMode == ThemeMode.dark;
     final seed = themeState.seedColor;
+    final primary = theme.colorScheme.primary;
+    final grad = [primary.withValues(alpha: 0.15), theme.colorScheme.surface.withValues(alpha: 0)];
 
     const colorOptions = [
       Colors.blue,
@@ -862,69 +1033,72 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       Colors.amber,
     ];
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            Text('SETTINGS', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
-            const SizedBox(height: 32),
-            Container(
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 2))],
-              ),
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    title: const Text('Dark Mode'),
-                    subtitle: const Text('Toggle dark theme'),
-                    value: isDark,
-                    onChanged: (_) => themeState.toggleTheme(),
-                    secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode, color: theme.colorScheme.primary),
-                  ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
-                  SwitchListTile(
-                    title: const Text('Sound Effects'),
-                    subtitle: const Text('Enable/disable sounds'),
-                    value: _soundEnabled,
-                    onChanged: (v) => setState(() => _soundEnabled = v),
-                    secondary: Icon(_soundEnabled ? Icons.volume_up : Icons.volume_off, color: theme.colorScheme.primary),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text('Theme Color', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 14,
-              runSpacing: 14,
-              children: colorOptions.map((c) {
-                final selected = seed.toARGB32() == c.toARGB32();
-                return GestureDetector(
-                  onTap: () => themeState.setSeedColor(c),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: c,
-                      shape: BoxShape.circle,
-                      border: selected ? Border.all(color: isDark ? Colors.white : theme.colorScheme.surface, width: 3) : null,
-                      boxShadow: selected
-                          ? [BoxShadow(color: c.withValues(alpha: 0.5), blurRadius: 12, spreadRadius: 2)]
-                          : [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)],
+    return Container(
+      key: const ValueKey('tab_settings'),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: grad),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 8),
+              Text('SETTINGS', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
+              const SizedBox(height: 32),
+              GlassCard(
+                borderRadius: 16,
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: const Text('Dark Mode'),
+                      subtitle: const Text('Toggle dark theme'),
+                      value: isDark,
+                      onChanged: (_) => themeState.toggleTheme(),
+                      secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode, color: primary),
                     ),
-                    child: selected ? Icon(Icons.check, color: isDark ? Colors.white : Colors.white, size: 24) : null,
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
+                    Divider(height: 1, indent: 16, endIndent: 16, color: theme.dividerColor),
+                    SwitchListTile(
+                      title: const Text('Sound Effects'),
+                      subtitle: const Text('Enable/disable sounds'),
+                      value: _soundEnabled,
+                      onChanged: (v) => setState(() => _soundEnabled = v),
+                      secondary: Icon(_soundEnabled ? Icons.volume_up : Icons.volume_off, color: primary),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text('Theme Color', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 14,
+                runSpacing: 14,
+                children: colorOptions.map((c) {
+                  final selected = seed.toARGB32() == c.toARGB32();
+                  return GestureDetector(
+                    onTap: () => themeState.setSeedColor(c),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: c,
+                        shape: BoxShape.circle,
+                        border: selected ? Border.all(color: isDark ? Colors.white : theme.colorScheme.surface, width: 3) : null,
+                        boxShadow: selected
+                            ? [BoxShadow(color: c.withValues(alpha: 0.5), blurRadius: 12, spreadRadius: 2)]
+                            : [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)],
+                      ),
+                      child: selected ? Icon(Icons.check, color: isDark ? Colors.white : Colors.white, size: 24) : null,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
         ),
       ),
     );
