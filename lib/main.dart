@@ -169,12 +169,12 @@ class WheelPainter extends CustomPainter {
   WheelPainter({required this.items, required this.spinAngle});
 
   static const colors = [
-    Color(0xFFE64C4C),
-    Color(0xFF3399CC),
-    Color(0xFFE6B800),
-    Color(0xFF33AA55),
-    Color(0xFF9955BB),
-    Color(0xFFE67A33),
+    Color(0xFFFF6B6B),
+    Color(0xFF4ECDC4),
+    Color(0xFFFFE66D),
+    Color(0xFF95E1D3),
+    Color(0xFFDDA0DD),
+    Color(0xFFF7A072),
   ];
 
   @override
@@ -185,6 +185,19 @@ class WheelPainter extends CustomPainter {
     final n = items.length;
     final sweep = 2 * pi / n;
 
+    // Outer shadow ring
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.1)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawCircle(center, radius, shadowPaint);
+
+    // Outer border
+    final borderPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    canvas.drawCircle(center, radius - 1, borderPaint);
+
     canvas.save();
     canvas.translate(center.dx, center.dy);
     canvas.rotate(spinAngle);
@@ -194,32 +207,63 @@ class WheelPainter extends CustomPainter {
         ..color = colors[i % colors.length]
         ..style = PaintingStyle.fill;
       final startAngle = i * sweep - pi / 2;
-      canvas.drawArc(Rect.fromCircle(center: Offset.zero, radius: radius), startAngle, sweep, true, paint);
+      canvas.drawArc(Rect.fromCircle(center: Offset.zero, radius: radius - 2), startAngle, sweep, true, paint);
 
+      // Segment separator line
+      final linePaint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.3)
+        ..strokeWidth = 1.5;
+      final angle = startAngle;
+      canvas.drawLine(Offset.zero, Offset(cos(angle) * (radius - 2), sin(angle) * (radius - 2)), linePaint);
+
+      // Text
       final textAngle = startAngle + sweep / 2;
-      final textRadius = radius * 0.6;
+      final textRadius = radius * 0.58;
       canvas.save();
       canvas.rotate(textAngle);
       canvas.translate(textRadius, 0);
       canvas.rotate(pi / 2);
 
+      final text = items[i].length > 8 ? '${items[i].substring(0, 7)}..' : items[i];
       final textPainter = TextPainter(
         text: TextSpan(
-          text: items[i].length > 8 ? '${items[i].substring(0, 7)}..' : items[i],
-          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+          text: text,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            shadows: [Shadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 2)],
+          ),
         ),
         textDirection: TextDirection.ltr,
-      )..layout(maxWidth: radius * 0.5);
+      )..layout(maxWidth: radius * 0.45);
       textPainter.paint(canvas, Offset(-textPainter.width / 2, -textPainter.height / 2));
       canvas.restore();
     }
 
     canvas.restore();
 
-    final dotPaint = Paint()..color = Colors.white;
-    canvas.drawCircle(center, 12, dotPaint);
-    dotPaint.color = Colors.grey[800]!;
-    canvas.drawCircle(center, 8, dotPaint);
+    // Outer ring accent
+    final ringPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    canvas.drawCircle(center, radius - 2, ringPaint);
+
+    // Center dot - outer white ring
+    final outerDot = Paint()..color = Colors.white;
+    canvas.drawCircle(center, 14, outerDot);
+
+    // Center dot - inner gradient-like (dark)
+    final innerDot = Paint()
+      ..shader = RadialGradient(
+        colors: [Colors.grey[300]!, Colors.grey[800]!],
+      ).createShader(Rect.fromCircle(center: center, radius: 10));
+    canvas.drawCircle(center, 10, innerDot);
+
+    // Center highlight
+    final highlight = Paint()..color = Colors.white.withValues(alpha: 0.4);
+    canvas.drawCircle(Offset(center.dx - 2, center.dy - 3), 3, highlight);
   }
 
   @override
@@ -465,7 +509,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final n = items.length;
     final anglePerItem = 2 * pi / n;
     final winnerAngle = winnerIdx * anglePerItem + anglePerItem / 2;
-    final target = spinAngle + (2 * pi * _random.nextInt(4) + 4 * pi) - winnerAngle;
+    final target = (2 * pi * _random.nextInt(4) + 4 * pi) - winnerAngle;
 
     Future.delayed(const Duration(milliseconds: 150), () => _playSound('spin.ogg'));
 
@@ -857,7 +901,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           child: Column(
             children: [
               Text('SPIN THE WHEEL', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: primary)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Expanded(
                 flex: 2,
                 child: GlassCard(
@@ -886,14 +930,47 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       return Stack(
                         alignment: Alignment.topCenter,
                         children: [
+                          // Drop shadow behind wheel
                           Padding(
-                            padding: const EdgeInsets.only(top: 6),
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Container(
+                              width: size,
+                              height: size,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: primary.withValues(alpha: 0.2),
+                                    blurRadius: 20,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // The wheel
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
                             child: CustomPaint(
                               size: Size(size, size),
                               painter: WheelPainter(items: wheelItems, spinAngle: spinAngle),
                             ),
                           ),
-                          Icon(Icons.arrow_drop_down, size: 36, color: theme.colorScheme.onSurface),
+                          // Pointer triangle at top
+                          Positioned(
+                            top: 0,
+                            child: Container(
+                              width: 0,
+                              height: 0,
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  left: BorderSide(color: primary, width: 14),
+                                  right: BorderSide(color: primary, width: 14),
+                                  bottom: BorderSide(color: primary, width: 16),
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       );
                     },
@@ -901,7 +978,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(wheelResult, style: theme.textTheme.titleLarge?.copyWith(color: primary, fontWeight: FontWeight.bold)),
+              GlassCard(
+                borderRadius: 12,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Text(
+                  wheelResult,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleMedium?.copyWith(color: primary, fontWeight: FontWeight.bold),
+                ),
+              ),
               const SizedBox(height: 6),
               SizedBox(
                 width: double.infinity,
