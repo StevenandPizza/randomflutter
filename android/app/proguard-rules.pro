@@ -1,0 +1,3 @@
+-keep class com.randomsteven.randomflutter.** { *; }
+-keep class xyz.luan.audioplayers.** { *; }
+-dontwarn xyz.luan.audioplayers.**
