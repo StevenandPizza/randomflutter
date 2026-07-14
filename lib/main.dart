@@ -1204,8 +1204,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 // ============================================================
 class _CoinPainter extends CustomPainter {
   final double angle;
+  final double spin;
 
-  _CoinPainter({required this.angle});
+  _CoinPainter({required this.angle, this.spin = 0});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1221,6 +1222,12 @@ class _CoinPainter extends CustomPainter {
       ..color = Colors.black.withValues(alpha: 0.2)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
     canvas.drawCircle(Offset(center.dx + 2, center.dy + 3), radius, shadow);
+
+    // Rotate the entire coin around its centre so it spins/tumbles in the air.
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(spin);
+    canvas.translate(-center.dx, -center.dy);
 
     // Projected metal edge. This remains visible when the coin turns sideways.
     final edgeRect = Rect.fromCenter(
@@ -1350,11 +1357,13 @@ class _CoinPainter extends CustomPainter {
       ).createShader(Rect.fromCircle(center: center, radius: radius));
     canvas.drawCircle(center, radius, gloss);
 
-    canvas.restore();
+    canvas.restore(); // face scale
+    canvas.restore(); // spin
+
   }
 
   @override
-  bool shouldRepaint(_CoinPainter old) => old.angle != angle;
+  bool shouldRepaint(_CoinPainter old) => old.angle != angle || old.spin != spin;
 }
 
 // ============================================================
@@ -1606,6 +1615,7 @@ class _CoinFlipPageState extends State<_CoinFlipPage> with TickerProviderStateMi
   late AnimationController _ctrl;
   bool _isFlipping = false;
   bool _isHeads = true;
+  int _spinTurns = 0;
   String _result = 'Tap to Flip';
   final _random = Random();
 
@@ -1618,6 +1628,7 @@ class _CoinFlipPageState extends State<_CoinFlipPage> with TickerProviderStateMi
   void _flip() {
     if (_isFlipping) return;
     _isHeads = _random.nextBool();
+    _spinTurns = 2 + _random.nextInt(4);
     setState(() { _isFlipping = true; _result = 'Flipping...'; });
     _ctrl.forward(from: 0).then((_) {
       setState(() {
@@ -1660,6 +1671,8 @@ class _CoinFlipPageState extends State<_CoinFlipPage> with TickerProviderStateMi
                 final tossY = -170 * 4 * t * (1 - t);
                 // Wobble — slight X tilt that peaks mid‑flight
                 final wobble = sin(t * pi) * 0.15;
+                // Spin around Z so the coin tumbles horizontally in the air.
+                final spin = t * _spinTurns * 2 * pi;
                 return SizedBox(
                   width: 170,
                   height: 170,
@@ -1670,7 +1683,7 @@ class _CoinFlipPageState extends State<_CoinFlipPage> with TickerProviderStateMi
                       transform: Matrix4.identity()..rotateX(wobble),
                       child: CustomPaint(
                         size: const Size(170, 170),
-                        painter: _CoinPainter(angle: angle),
+                        painter: _CoinPainter(angle: angle, spin: spin),
                       ),
                     ),
                   ),
