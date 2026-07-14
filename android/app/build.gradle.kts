@@ -27,21 +27,27 @@ android {
         versionName = flutter.versionName
     }
 
-    signingConfigs {
-        create("release") {
-            val keyProps = Properties().apply {
-                load(file("../key.properties").inputStream())
+    val keyPropsFile = rootProject.file("key.properties")
+    if (keyPropsFile.exists()) {
+        val keyProps = Properties()
+        keyProps.load(keyPropsFile.inputStream())
+        signingConfigs {
+            create("release") {
+                storeFile = file(keyProps.getProperty("storeFile"))
+                storePassword = keyProps.getProperty("storePassword")
+                keyAlias = keyProps.getProperty("keyAlias")
+                keyPassword = keyProps.getProperty("keyPassword")
             }
-            storeFile = file(keyProps["storeFile"] as String)
-            storePassword = keyProps["storePassword"] as String
-            keyAlias = keyProps["keyAlias"] as String
-            keyPassword = keyProps["keyPassword"] as String
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            if (keyPropsFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
+            }
         }
     }
 }
