@@ -1324,23 +1324,6 @@ class _CoinPainter extends CustomPainter {
       Offset(center.dx - textPainter.width / 2, center.dy - textPainter.height / 2),
     );
 
-    // Bottom small text
-    final yearPainter = TextPainter(
-      text: TextSpan(
-        text: '2024',
-        style: TextStyle(
-          fontSize: radius * 0.14,
-          color: const Color(0xFF8B6914),
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    yearPainter.paint(
-      canvas,
-      Offset(center.dx - yearPainter.width / 2, center.dy + radius * 0.5),
-    );
-
     // Top "RANDOM" arc text
     final topPainter = TextPainter(
       text: TextSpan(
@@ -1667,17 +1650,29 @@ class _CoinFlipPageState extends State<_CoinFlipPage> with TickerProviderStateMi
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
              AnimatedBuilder(
-               animation: _ctrl,
-               builder: (context, _) {
-                // Four full half-turns plus the selected final face.
+                animation: _ctrl,
+                builder: (context, _) {
+                 final t = _ctrl.value;
+                 // Four full half-turns plus the selected final face.
                 final totalAngle = 4 * pi + (_isHeads ? 0 : pi);
-                final angle = _ctrl.value * totalAngle;
+                final angle = t * totalAngle;
+                // Parabolic vertical arc: coin rises and falls.
+                final tossY = -170 * 4 * t * (1 - t);
+                // Wobble — slight X tilt that peaks mid‑flight
+                final wobble = sin(t * pi) * 0.15;
                 return SizedBox(
                   width: 170,
                   height: 170,
-                  child: CustomPaint(
-                    size: const Size(170, 170),
-                    painter: _CoinPainter(angle: angle),
+                  child: Transform.translate(
+                    offset: Offset(0, tossY),
+                    child: Transform(
+                      alignment: Alignment.center,
+                      transform: Matrix4.identity()..rotateX(wobble),
+                      child: CustomPaint(
+                        size: const Size(170, 170),
+                        painter: _CoinPainter(angle: angle),
+                      ),
+                    ),
                   ),
                 );
               },
