@@ -1203,14 +1203,18 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 // COIN PAINTER — realistic gold coin
 // ============================================================
 class _CoinPainter extends CustomPainter {
-  final bool isHeads;
+  final double angle;
 
-  _CoinPainter({required this.isHeads});
+  _CoinPainter({required this.angle});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
+    final faceScale = max(cos(angle).abs(), 0.035);
+    final sideScale = sin(angle).abs();
+    final isHeads = cos(angle) >= 0;
+    final thickness = radius * 0.12;
 
     // Drop shadow
     final shadow = Paint()
@@ -1218,33 +1222,61 @@ class _CoinPainter extends CustomPainter {
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
     canvas.drawCircle(Offset(center.dx + 2, center.dy + 3), radius, shadow);
 
+    // Projected metal edge. This remains visible when the coin turns sideways.
+    final edgeRect = Rect.fromCenter(
+      center: center,
+      width: 2 * radius * faceScale + thickness * sideScale,
+      height: 2 * radius,
+    );
+    final edge = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: const [
+          Color(0xFFF4D77B),
+          Color(0xFF9C6A16),
+          Color(0xFFD6A934),
+          Color(0xFF70480B),
+        ],
+        stops: const [0.0, 0.35, 0.65, 1.0],
+      ).createShader(edgeRect);
+    canvas.drawOval(edgeRect, edge);
+
+    // Keep the face artwork upright instead of mirroring the back face.
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(faceScale, 1);
+    canvas.translate(-center.dx, -center.dy);
+
+    final faceRadius = radius - thickness * 0.5;
+
     // Outer rim (raised edge)
     final rimOuter = Paint()
       ..shader = SweepGradient(
         center: Alignment.center,
-        colors: [
-          const Color(0xFFBF8F3F),
-          const Color(0xFFE8C76A),
-          const Color(0xFFF2D785),
-          const Color(0xFFD4A84B),
-          const Color(0xFFBF8F3F),
+        colors: const [
+          Color(0xFFBF8F3F),
+          Color(0xFFE8C76A),
+          Color(0xFFF2D785),
+          Color(0xFFD4A84B),
+          Color(0xFFBF8F3F),
         ],
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
-    canvas.drawCircle(center, radius, rimOuter);
+      ).createShader(Rect.fromCircle(center: center, radius: faceRadius));
+    canvas.drawCircle(center, faceRadius, rimOuter);
 
     // Inner rim step
     final rimInner = Paint()
       ..shader = SweepGradient(
         center: Alignment.center,
-        colors: [
-          const Color(0xFFA67B2E),
-          const Color(0xFFD4A84B),
-          const Color(0xFFE8C76A),
-          const Color(0xFFC49A3C),
-          const Color(0xFFA67B2E),
+        colors: const [
+          Color(0xFFA67B2E),
+          Color(0xFFD4A84B),
+          Color(0xFFE8C76A),
+          Color(0xFFC49A3C),
+          Color(0xFFA67B2E),
         ],
-      ).createShader(Rect.fromCircle(center: center, radius: radius - 3));
-    canvas.drawCircle(center, radius - 3, rimInner);
+      ).createShader(Rect.fromCircle(center: center, radius: faceRadius - 3));
+    canvas.drawCircle(center, faceRadius - 3, rimInner);
 
     // Main face with gold gradient
     final face = Paint()
@@ -1255,15 +1287,15 @@ class _CoinPainter extends CustomPainter {
             ? [const Color(0xFFFFE082), const Color(0xFFF2C94C), const Color(0xFFD4A017), const Color(0xFFB8860B)]
             : [const Color(0xFFF7DC6F), const Color(0xFFE8B830), const Color(0xFFC4941A), const Color(0xFFA0760A)],
         stops: const [0.0, 0.3, 0.7, 1.0],
-      ).createShader(Rect.fromCircle(center: center, radius: radius - 5));
-    canvas.drawCircle(center, radius - 5, face);
+      ).createShader(Rect.fromCircle(center: center, radius: faceRadius - 5));
+    canvas.drawCircle(center, faceRadius - 5, face);
 
     // Edge dots (coin ridge texture)
     final dot = Paint()..color = const Color(0xFFA67B2E).withValues(alpha: 0.4);
     for (int i = 0; i < 36; i++) {
       final a = i * 2 * pi / 36;
-      final dx = center.dx + (radius - 7) * cos(a);
-      final dy = center.dy + (radius - 7) * sin(a);
+      final dx = center.dx + (faceRadius - 7) * cos(a);
+      final dy = center.dy + (faceRadius - 7) * sin(a);
       canvas.drawCircle(Offset(dx, dy), 0.8, dot);
     }
 
@@ -1272,7 +1304,7 @@ class _CoinPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0
       ..color = const Color(0xFFA67B2E).withValues(alpha: 0.5);
-    canvas.drawCircle(center, radius - 12, fineRing);
+    canvas.drawCircle(center, faceRadius - 12, fineRing);
 
     // Center text — H or T
     final textPainter = TextPainter(
@@ -1334,102 +1366,247 @@ class _CoinPainter extends CustomPainter {
         colors: [Colors.white.withValues(alpha: 0.35), Colors.white.withValues(alpha: 0)],
       ).createShader(Rect.fromCircle(center: center, radius: radius));
     canvas.drawCircle(center, radius, gloss);
+
+    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(_CoinPainter old) => old.isHeads != isHeads;
+  bool shouldRepaint(_CoinPainter old) => old.angle != angle;
 }
 
 // ============================================================
-// DICE FACE PAINTER (3D realistic)
+// DICE CUBE PAINTER (projected six-face 3D cube)
 // ============================================================
+class _CubePoint {
+  final double x;
+  final double y;
+  final double z;
+
+  const _CubePoint(this.x, this.y, this.z);
+}
+
+class _CubeFace {
+  final List<int> indices;
+  final int number;
+  final _CubePoint center;
+  final _CubePoint horizontal;
+  final _CubePoint vertical;
+  final _CubePoint normal;
+
+  const _CubeFace({
+    required this.indices,
+    required this.number,
+    required this.center,
+    required this.horizontal,
+    required this.vertical,
+    required this.normal,
+  });
+}
+
+double _lerp(double start, double end, double t) => start + (end - start) * t;
+
 class _DicePainter extends CustomPainter {
-  final int value;
+  final double rx;
+  final double ry;
+  final double rz;
 
-  _DicePainter({required this.value});
+  _DicePainter({required this.rx, required this.ry, required this.rz});
 
-  static const _dotPositions = {
-    1: [Offset(0.5, 0.5)],
-    2: [Offset(0.75, 0.25), Offset(0.25, 0.75)],
-    3: [Offset(0.75, 0.25), Offset(0.5, 0.5), Offset(0.25, 0.75)],
-    4: [Offset(0.23, 0.23), Offset(0.77, 0.23), Offset(0.23, 0.77), Offset(0.77, 0.77)],
+  static const _vertices = [
+    _CubePoint(-1, -1, -1),
+    _CubePoint(1, -1, -1),
+    _CubePoint(1, 1, -1),
+    _CubePoint(-1, 1, -1),
+    _CubePoint(-1, -1, 1),
+    _CubePoint(1, -1, 1),
+    _CubePoint(1, 1, 1),
+    _CubePoint(-1, 1, 1),
+  ];
+
+  // Opposite faces add up to seven, like a real die.
+  static const _faces = [
+    _CubeFace(
+      indices: [4, 5, 6, 7],
+      number: 1,
+      center: _CubePoint(0, 0, 1),
+      horizontal: _CubePoint(1, 0, 0),
+      vertical: _CubePoint(0, 1, 0),
+      normal: _CubePoint(0, 0, 1),
+    ),
+    _CubeFace(
+      indices: [0, 3, 2, 1],
+      number: 6,
+      center: _CubePoint(0, 0, -1),
+      horizontal: _CubePoint(-1, 0, 0),
+      vertical: _CubePoint(0, 1, 0),
+      normal: _CubePoint(0, 0, -1),
+    ),
+    _CubeFace(
+      indices: [0, 4, 7, 3],
+      number: 2,
+      center: _CubePoint(-1, 0, 0),
+      horizontal: _CubePoint(0, 0, 1),
+      vertical: _CubePoint(0, 1, 0),
+      normal: _CubePoint(-1, 0, 0),
+    ),
+    _CubeFace(
+      indices: [1, 2, 6, 5],
+      number: 5,
+      center: _CubePoint(1, 0, 0),
+      horizontal: _CubePoint(0, 0, -1),
+      vertical: _CubePoint(0, 1, 0),
+      normal: _CubePoint(1, 0, 0),
+    ),
+    _CubeFace(
+      indices: [0, 1, 5, 4],
+      number: 4,
+      center: _CubePoint(0, -1, 0),
+      horizontal: _CubePoint(1, 0, 0),
+      vertical: _CubePoint(0, 0, 1),
+      normal: _CubePoint(0, -1, 0),
+    ),
+    _CubeFace(
+      indices: [3, 2, 6, 7],
+      number: 3,
+      center: _CubePoint(0, 1, 0),
+      horizontal: _CubePoint(1, 0, 0),
+      vertical: _CubePoint(0, 0, -1),
+      normal: _CubePoint(0, 1, 0),
+    ),
+  ];
+
+  static const _pipPositions = {
+    1: [Offset(0, 0)],
+    2: [Offset(-0.55, 0.55), Offset(0.55, -0.55)],
+    3: [Offset(-0.55, 0.55), Offset(0, 0), Offset(0.55, -0.55)],
+    4: [
+      Offset(-0.55, 0.55), Offset(0.55, 0.55),
+      Offset(-0.55, -0.55), Offset(0.55, -0.55),
+    ],
     5: [
-      Offset(0.23, 0.23), Offset(0.77, 0.23),
-      Offset(0.5, 0.5),
-      Offset(0.23, 0.77), Offset(0.77, 0.77),
+      Offset(-0.55, 0.55), Offset(0.55, 0.55), Offset(0, 0),
+      Offset(-0.55, -0.55), Offset(0.55, -0.55),
     ],
     6: [
-      Offset(0.23, 0.17), Offset(0.77, 0.17),
-      Offset(0.23, 0.5), Offset(0.77, 0.5),
-      Offset(0.23, 0.83), Offset(0.77, 0.83),
+      Offset(-0.55, 0.62), Offset(0.55, 0.62),
+      Offset(-0.55, 0), Offset(0.55, 0),
+      Offset(-0.55, -0.62), Offset(0.55, -0.62),
     ],
   };
 
+  _CubePoint _rotate(_CubePoint point) {
+    final cosX = cos(rx);
+    final sinX = sin(rx);
+    final cosY = cos(ry);
+    final sinY = sin(ry);
+    final cosZ = cos(rz);
+    final sinZ = sin(rz);
+
+    final y1 = point.y * cosX - point.z * sinX;
+    final z1 = point.y * sinX + point.z * cosX;
+    final x2 = point.x * cosY + z1 * sinY;
+    final z2 = -point.x * sinY + z1 * cosY;
+    final x3 = x2 * cosZ - y1 * sinZ;
+    final y3 = x2 * sinZ + y1 * cosZ;
+    return _CubePoint(x3, y3, z2);
+  }
+
+  Offset _project(_CubePoint point, Offset center, double scale) {
+    const focalLength = 4.6;
+    final perspective = focalLength / (focalLength - point.z);
+    return Offset(
+      center.dx + point.x * scale * perspective,
+      center.dy - point.y * scale * perspective,
+    );
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final margin = w * 0.1;
-    final r = w * 0.18;
+    final center = Offset(size.width / 2, size.height / 2);
+    final scale = min(size.width, size.height) * 0.31;
 
-    // 3D shadow
+    // Ground shadow gives the cube a stable position in space.
     final shadow = Paint()
       ..color = Colors.black.withValues(alpha: 0.18)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(3, 5, w, h), Radius.circular(r)), shadow);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: center + const Offset(0, 42),
+        width: scale * 1.9,
+        height: scale * 0.45,
+      ),
+      shadow,
+    );
 
-    // Main body with 3D gradient shading
-    final body = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          const Color(0xFFFFFFFF),
-          const Color(0xFFF5F5F5),
-          const Color(0xFFE8E8E8),
-          const Color(0xFFD0D0D0),
-        ],
-        stops: const [0.0, 0.3, 0.7, 1.0],
-      ).createShader(Rect.fromLTWH(0, 0, w, h));
-    final rrect = RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, w, h), Radius.circular(r));
-    canvas.drawRRect(rrect, body);
+    final transformedVertices = _vertices.map(_rotate).toList();
+    final orderedFaces = _faces.map((face) {
+      final transformedCenter = _rotate(face.center);
+      final transformedNormal = _rotate(face.normal);
+      return (
+        face: face,
+        depth: transformedCenter.z,
+        normal: transformedNormal,
+      );
+    }).toList()
+      ..sort((a, b) => a.depth.compareTo(b.depth));
 
-    // Edge highlight (top-left)
-    final edgeLight = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Colors.white.withValues(alpha: 0.6), Colors.white.withValues(alpha: 0)],
-      ).createShader(Rect.fromLTWH(0, 0, w * 0.6, h * 0.6));
-    canvas.drawRRect(rrect, edgeLight);
+    for (final item in orderedFaces) {
+      final face = item.face;
+      final points = face.indices
+          .map((index) => _project(transformedVertices[index], center, scale))
+          .toList();
+      final path = Path()..moveTo(points.first.dx, points.first.dy);
+      for (final point in points.skip(1)) {
+        path.lineTo(point.dx, point.dy);
+      }
+      path.close();
 
-    // Dots - with indented 3D effect
-    final positions = _dotPositions[value] ?? [];
-    final dotR = w * 0.075;
+      final light = (0.70 + max(0.0, item.normal.z) * 0.30).clamp(0.0, 1.0).toDouble();
+      final faceColor = Color.lerp(const Color(0xFFBFC6CE), Colors.white, light)!;
+      canvas.drawPath(path, Paint()..color = faceColor);
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.6
+          ..color = const Color(0xFF6B737C).withValues(alpha: 0.8),
+      );
 
-    for (final pos in positions) {
-      final dx = margin + pos.dx * (w - 2 * margin);
-      final dy = margin + pos.dy * (h - 2 * margin);
+      // Hidden faces are covered by faces painted later in depth order.
+      if (item.normal.z < -0.12) continue;
 
-      // Dot shadow (bottom-right offset for indent effect)
-      final dotShadow = Paint()
-        ..shader = RadialGradient(
-          colors: [Colors.black.withValues(alpha: 0.3), Colors.black.withValues(alpha: 0)],
-        ).createShader(Rect.fromCircle(center: Offset(dx + 1, dy + 1), radius: dotR + 1));
-      canvas.drawCircle(Offset(dx + 1, dy + 1), dotR + 1, dotShadow);
+      final pipPoints = _pipPositions[face.number] ?? const <Offset>[];
+      for (final pip in pipPoints) {
+        final local = _CubePoint(
+          face.center.x + face.horizontal.x * pip.dx + face.vertical.x * pip.dy,
+          face.center.y + face.horizontal.y * pip.dx + face.vertical.y * pip.dy,
+          face.center.z + face.horizontal.z * pip.dx + face.vertical.z * pip.dy,
+        );
+        final transformed = _rotate(local);
+        final pipCenter = _project(transformed, center, scale);
+        final perspective = 4.6 / (4.6 - transformed.z);
+        final pipRadius = scale * 0.105 * perspective;
 
-      // Dot main
-      final dot = Paint()
-        ..shader = RadialGradient(
-          focal: const Alignment(0.3, 0.3),
-          colors: [const Color(0xFF555555), const Color(0xFF1A1A1A)],
-        ).createShader(Rect.fromCircle(center: Offset(dx, dy), radius: dotR));
-      canvas.drawCircle(Offset(dx, dy), dotR, dot);
+        canvas.drawCircle(
+          pipCenter + const Offset(1.2, 1.5),
+          pipRadius * 1.08,
+          Paint()..color = Colors.black.withValues(alpha: 0.28),
+        );
+        canvas.drawCircle(
+          pipCenter,
+          pipRadius,
+          Paint()
+            ..shader = RadialGradient(
+              focal: const Alignment(-0.25, -0.25),
+              colors: const [Color(0xFF555B62), Color(0xFF121417)],
+            ).createShader(Rect.fromCircle(center: pipCenter, radius: pipRadius)),
+        );
+      }
     }
   }
 
   @override
-  bool shouldRepaint(_DicePainter old) => old.value != value;
+  bool shouldRepaint(_DicePainter old) => old.rx != rx || old.ry != ry || old.rz != rz;
 }
 
 // ============================================================
@@ -1489,23 +1666,18 @@ class _CoinFlipPageState extends State<_CoinFlipPage> with TickerProviderStateMi
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedBuilder(
-              animation: _ctrl,
-              builder: (context, _) {
-                final angle = _ctrl.value * pi;
-                final showHeads = angle < pi / 2;
-                return Transform(
-                  transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.002)
-                    ..rotateY(angle),
-                  alignment: Alignment.center,
-                  child: SizedBox(
-                    width: 170,
-                    height: 170,
-                    child: CustomPaint(
-                      size: const Size(170, 170),
-                      painter: _CoinPainter(isHeads: showHeads),
-                    ),
+             AnimatedBuilder(
+               animation: _ctrl,
+               builder: (context, _) {
+                // Four full half-turns plus the selected final face.
+                final totalAngle = 4 * pi + (_isHeads ? 0 : pi);
+                final angle = _ctrl.value * totalAngle;
+                return SizedBox(
+                  width: 170,
+                  height: 170,
+                  child: CustomPaint(
+                    size: const Size(170, 170),
+                    painter: _CoinPainter(angle: angle),
                   ),
                 );
               },
@@ -1547,31 +1719,58 @@ class _DiceRollerPage extends StatefulWidget {
 
 class _DiceRollerPageState extends State<_DiceRollerPage> with TickerProviderStateMixin {
   int _result = 1;
+  int _pendingResult = 1;
   bool _isRolling = false;
   final _random = Random();
   late AnimationController _rollCtrl;
-  late Animation<double> _rollAnim;
+  double _rx = 0;
+  double _ry = 0;
+  double _rz = 0;
+  double _startRx = 0;
+  double _startRy = 0;
+  double _startRz = 0;
+  double _targetRx = 0;
+  double _targetRy = 0;
+  double _targetRz = 0;
+
+  static const _faceAngles = <int, List<double>>{
+    1: [0, 0],
+    6: [0, pi],
+    2: [0, pi / 2],
+    5: [0, -pi / 2],
+    4: [-pi / 2, 0],
+    3: [pi / 2, 0],
+  };
 
   @override
   void initState() {
     super.initState();
-    _rollCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
-    _rollAnim = CurvedAnimation(parent: _rollCtrl, curve: Curves.easeOut);
+    _rollCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1250));
   }
 
   void _roll() {
     if (_isRolling) return;
-    _rollCtrl.forward(from: 0);
+    _pendingResult = _random.nextInt(6) + 1;
+    final base = _faceAngles[_pendingResult]!;
+    final currentTurnsX = max(0, (_rx / (2 * pi)).floor());
+    final currentTurnsY = max(0, (_ry / (2 * pi)).floor());
+    final currentTurnsZ = max(0, (_rz / (2 * pi)).floor());
+    _startRx = _rx;
+    _startRy = _ry;
+    _startRz = _rz;
+    _targetRx = base[0] + (currentTurnsX + 3 + _random.nextInt(3)) * 2 * pi;
+    _targetRy = base[1] + (currentTurnsY + 3 + _random.nextInt(3)) * 2 * pi;
+    _targetRz = (currentTurnsZ + 2 + _random.nextInt(2)) * 2 * pi;
     setState(() => _isRolling = true);
-    int count = 0;
-    Timer.periodic(const Duration(milliseconds: 60), (t) {
-      count++;
-      setState(() => _result = _random.nextInt(6) + 1);
-      if (count > 20) {
-        t.cancel();
-        _rollCtrl.reverse();
-        setState(() => _isRolling = false);
-      }
+    _rollCtrl.forward(from: 0).then((_) {
+      if (!mounted) return;
+      setState(() {
+        _rx = _targetRx;
+        _ry = _targetRy;
+        _rz = _targetRz;
+        _result = _pendingResult;
+        _isRolling = false;
+      });
     });
   }
 
@@ -1597,30 +1796,19 @@ class _DiceRollerPageState extends State<_DiceRollerPage> with TickerProviderSta
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedBuilder(
-              animation: _rollAnim,
+             AnimatedBuilder(
+              animation: _rollCtrl,
               builder: (context, _) {
-                final rollVal = _rollAnim.value;
-                final rx = rollVal * 6 * pi;
-                final ry = rollVal * 4 * pi;
-                final scale = 1.0 + (rollVal * 0.08);
-                return Transform.scale(
-                  scale: scale,
-                  child: Transform(
-                    transform: Matrix4.identity()
-                      ..setEntry(3, 2, 0.001)
-                      ..rotateX(rx)
-                      ..rotateY(ry)
-                      ..rotateZ(rollVal * 0.2),
-                    alignment: Alignment.center,
-                    child: SizedBox(
-                      width: 140,
-                      height: 140,
-                      child: CustomPaint(
-                        size: const Size(140, 140),
-                        painter: _DicePainter(value: _result),
-                      ),
-                    ),
+                final progress = Curves.easeOutCubic.transform(_rollCtrl.value);
+                final rx = _lerp(_startRx, _targetRx, progress);
+                final ry = _lerp(_startRy, _targetRy, progress);
+                final rz = _lerp(_startRz, _targetRz, progress);
+                return SizedBox(
+                  width: 170,
+                  height: 170,
+                  child: CustomPaint(
+                    size: const Size(170, 170),
+                    painter: _DicePainter(rx: rx, ry: ry, rz: rz),
                   ),
                 );
               },
