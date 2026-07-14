@@ -1,4 +1,4 @@
-name: Build Flutter APK & AAB
+name: Build Flutter APK & AAB (signed)
 
 on:
   push:
@@ -15,11 +15,24 @@ jobs:
         with:
           channel: stable
 
+      - name: Decode keystore and create signing config
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/steven.keystore
+          cat > android/key.properties << EOF
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=steven.keystore
+          EOF
+
       - run: flutter pub get
 
       - run: flutter build apk --split-per-abi --release
 
       - run: flutter build appbundle --release
+
+      - name: Sign APKs with apksigner (already signed by Gradle)
+        run: echo "APKs and AAB are signed during the build."
 
       - uses: actions/upload-artifact@v4
         with:
