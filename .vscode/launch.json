@@ -2,21 +2,21 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "RandomFlutter (Local)",
+      "name": "RandomFlutter (Local USB/Emu)",
       "type": "dart",
       "request": "launch",
       "program": "lib/main.dart",
       "flutterMode": "debug"
     },
     {
-      "name": "RandomFlutter (Tailscale)",
+      "name": "RandomFlutter (Tailscale Wi-Fi)",
       "type": "dart",
       "request": "launch",
       "program": "lib/main.dart",
       "flutterMode": "debug",
       "deviceId": "",
-      "args": ["--hot"],
-      "promptForDeviceId": true
+      "promptForDeviceId": true,
+      "args": ["--hot"]
     }
   ]
 }

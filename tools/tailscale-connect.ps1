@@ -1,5 +1,6 @@
 param(
-    [string]$PhoneIP = ''
+    [string]$PhoneIP = '',
+    [string]$DebugPort = ''
 )
 
 $sdkRoot = $env:ANDROID_SDK_ROOT
@@ -13,21 +14,36 @@ if (-not $PhoneIP) {
     $PhoneIP = Read-Host 'Enter phone Tailscale IP (e.g. 100.x.x.x)'
 }
 
-# Remove stale connection first
-& $adb disconnect $PhoneIP
-Start-Sleep -Seconds 1
+$configFile = Split-Path -Parent $MyInvocation.MyCommand.Path
+$configFile = "$configFile\phone-config.txt"
 
-# Connect via Tailscale
-Write-Host "Connecting to $PhoneIP`:5555 ..." -ForegroundColor Cyan
-& $adb connect "${PhoneIP}:5555"
+# Load saved port
+$savedPort = ''
+if (Test-Path $configFile) {
+    $lines = Get-Content $configFile
+    if ($lines.Count -ge 2) { $savedPort = $lines[1].Trim() }
+}
 
-$devices = & $adb devices
-if ($devices -match "${PhoneIP}:5555.*device") {
-    Write-Host "Connected OK. Device: ${PhoneIP}:5555" -ForegroundColor Green
-} else {
-    Write-Host "FAILED. Make sure:" -ForegroundColor Red
-    Write-Host "  1. Phone is on Tailscale (same tailnet)" -ForegroundColor Yellow
-    Write-Host "  2. Phone has ADB TCP enabled (adb tcpip 5555)" -ForegroundColor Yellow
-    Write-Host "  3. Phone battery optimization is OFF for Tailscale" -ForegroundColor Yellow
+$port = if ($DebugPort) { $DebugPort } else { $savedPort }
+if (-not $port) {
+    $port = Read-Host "Enter Wireless Debugging port (e.g. 39675)"
+}
+
+Write-Host "Connecting to ${PhoneIP}:${port} ..." -ForegroundColor Cyan
+
+# Remove stale
+& $adb disconnect "${PhoneIP}:${port}" 2>$null
+
+& $adb connect "${PhoneIP}:${port}"
+if ($LASTEXITCODE -ne 0 -or -not (& $adb devices) -match "${PhoneIP}:${port}.*device") {
+    Write-Host "FAILED. Check:" -ForegroundColor Red
+    Write-Host "  - Phone: Developer options > Wireless debugging ON" -ForegroundColor Yellow
+    Write-Host "  - Phone Tailscale: connected, battery optimization OFF" -ForegroundColor Yellow
+    Write-Host "  - Port matches the one shown in Wireless debugging" -ForegroundColor Yellow
     exit 1
 }
+
+# Save IP + port
+Set-Content -Path $configFile -Value "${PhoneIP}`r`n${port}"
+
+Write-Host "Connected OK. ${PhoneIP}:${port}" -ForegroundColor Green
